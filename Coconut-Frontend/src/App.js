@@ -6,6 +6,8 @@ import Footer from './components/Footer';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionApply from './components/SubscriptionApply';
 import SubscriptionCalendar from './components/SubscriptionCalendar';
+import SubscriptionConfirm from './components/SubscriptionConfirm';
+import SubscriptionComplete from './components/SubscriptionComplete'; // 추가
 
 function App() {
   const [selectedTab, setSelectedTab] = useState('table');
@@ -15,20 +17,20 @@ function App() {
   const handleTabClick = (tab) => {
     setSelectedTab(tab);
     if (tab === 'table') {
-      navigate('/'); // Go to SubscriptionTable
+      navigate('/'); // 청약종목안내로 이동
     } else if (tab === 'calendar') {
-      navigate('/calendar'); // Go to SubscriptionCalendar
+      navigate('/calendar'); // 청약일정조회로 이동
     }
   };
 
-  // Conditionally render the header title and tabs based on the route
-  const isApplyPage = location.pathname === '/apply';
+  // Apply 경로 여부를 확인하고 탭을 조건부로 렌더링
+  const isApplyPage = location.pathname.includes('/apply'); // apply와 그 하위 경로 모두 포함
 
   return (
     <div style={styles.appContainer}>
       <Header />
       <main style={styles.mainContent}>
-        {!isApplyPage && ( // Conditionally render this section
+        {!isApplyPage && (
           <>
             <div style={styles.titleContainer}>
               <h2 style={styles.titleLeft}>공모주 청약안내</h2>
@@ -53,6 +55,8 @@ function App() {
           <Route path="/" element={<SubscriptionTable />} />
           <Route path="/apply" element={<SubscriptionApply />} />
           <Route path="/calendar" element={<SubscriptionCalendar />} />
+          <Route path="/apply/confirm" element={<SubscriptionConfirm />} />
+          <Route path="/apply/complete" element={<SubscriptionComplete />} /> {/* /apply/complete 경로 추가 */}
         </Routes>
       </main>
       <Footer />
@@ -60,6 +64,7 @@ function App() {
   );
 }
 
+// 기존의 styles 유지
 const styles = {
   appContainer: {
     display: 'flex',
