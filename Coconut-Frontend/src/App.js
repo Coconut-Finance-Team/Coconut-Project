@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/App.js
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -6,6 +7,18 @@ import Footer from './components/Footer';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionApply from './components/SubscriptionApply';
 import SubscriptionCalendar from './components/SubscriptionCalendar';
+=======
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Header from './components/common/Header';
+import Footer from './components/common/Footer';
+import Homeboard from './components/Homeboard';
+import Account from './components/Account';
+import SubscriptionTable from './components/subscription/SubscriptionTable';
+import SubscriptionApply from './components/subscription/SubscriptionApply';
+import SubscriptionConfirm from './components/subscription/SubscriptionConfirm';
+import SubscriptionComplete from './components/subscription/SubscriptionComplete';
+>>>>>>> upstream/develop
 
 function App() {
   const [selectedTab, setSelectedTab] = useState('table');
@@ -28,6 +41,7 @@ function App() {
     <div style={styles.appContainer}>
       <Header />
       <main style={styles.mainContent}>
+<<<<<<< HEAD
         {!isApplyPage && ( // Conditionally render this section
           <>
             <div style={styles.titleContainer}>
@@ -53,6 +67,15 @@ function App() {
           <Route path="/" element={<SubscriptionTable />} />
           <Route path="/apply" element={<SubscriptionApply />} />
           <Route path="/calendar" element={<SubscriptionCalendar />} />
+=======
+        <Routes>
+          <Route path="/" element={<Homeboard />} />
+          <Route path="/account/*" element={<Account />} />
+          <Route path="/subscription" element={<SubscriptionTable />} />
+          <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
+          <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
+          <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+>>>>>>> upstream/develop
         </Routes>
       </main>
       <Footer />
@@ -69,6 +92,7 @@ const styles = {
   },
   mainContent: {
     flex: 1,
+<<<<<<< HEAD
     padding: '20px',
   },
   titleContainer: {
@@ -108,3 +132,9 @@ const styles = {
 };
 
 export default App;
+=======
+  }
+};
+
+export default App;
+>>>>>>> upstream/develop
