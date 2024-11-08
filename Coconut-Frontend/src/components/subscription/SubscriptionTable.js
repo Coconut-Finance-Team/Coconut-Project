@@ -20,6 +20,7 @@ const SearchWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 `;
 
 const Select = styled.select`
@@ -35,15 +36,21 @@ const Select = styled.select`
 `;
 
 const SearchInput = styled.input`
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid #E5E8EB;
   font-size: 14px;
-  width: 300px;
+  width: 100%;
+  max-width: 400px; // 최대 크기를 제한
   outline: none;
   
   &::placeholder {
     color: #999;
+  }
+
+  &:focus {
+    border-color: #007AFF;
+    box-shadow: 0 0 5px rgba(0, 122, 255, 0.2);
   }
 `;
 
@@ -64,6 +71,7 @@ const Table = styled.table`
     text-align: center;
     border-bottom: 1px solid #E5E8EB;
     font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
   }
 
   th {
@@ -86,6 +94,7 @@ const ApplyButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  transition: background 0.2s;
 
   &:hover {
     background: #0056b3;
@@ -107,6 +116,7 @@ const PageButton = styled.button`
   color: ${props => props.active ? '#ffffff' : '#666'};
   font-size: 14px;
   cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 
   &:hover {
     background: ${props => props.active ? '#0056b3' : '#F8F9FA'};
