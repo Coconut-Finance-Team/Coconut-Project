@@ -24,6 +24,7 @@ const ModalContainer = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const ModalContent = styled.div`
@@ -37,6 +38,7 @@ const Title = styled.h2`
   color: #333;
   margin-bottom: 32px;
   text-align: center;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const SubTitle = styled.h3`
@@ -44,6 +46,7 @@ const SubTitle = styled.h3`
   font-weight: 600;
   color: #333;
   margin: 24px 0 16px 0;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const InfoCard = styled.div`
@@ -69,6 +72,7 @@ const Row = styled.div`
 const Label = styled.span`
   color: #666;
   font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Value = styled.span`
@@ -76,17 +80,30 @@ const Value = styled.span`
   font-size: 14px;
   font-weight: 500;
   text-align: right;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 // 라디오 버튼 스타일 개선
 const RadioGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 32px;
-  margin: 20px 0;
+  justify-content: space-between;
   padding: 16px 24px;
   background: #f8f9fa;
   border-radius: 12px;
+  margin: 20px 0;
+`;
+
+const RadioQuestion = styled.div`
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+const RadioLabelContainer = styled.div`
+  display: flex;
+  gap: 16px;
 `;
 
 const RadioLabel = styled.label`
@@ -96,20 +113,14 @@ const RadioLabel = styled.label`
   cursor: pointer;
   font-size: 15px;
   color: #333;
-  
+  font-family: 'Noto Sans KR', sans-serif;
+
   input[type="radio"] {
     width: 18px;
     height: 18px;
     margin: 0;
     cursor: pointer;
   }
-`;
-
-const RadioQuestion = styled.div`
-  font-size: 15px;
-  font-weight: 500;
-  color: #333;
-  margin-right: 24px;
 `;
 
 // 체크박스 스타일
@@ -133,6 +144,7 @@ const CheckboxLabel = styled.label`
   font-size: 14px;
   color: #333;
   flex: 1;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Checkbox = styled.input.attrs({ type: 'checkbox' })`
@@ -157,6 +169,7 @@ const DownloadButton = styled.button`
   color: #333;
   cursor: pointer;
   white-space: nowrap;
+  font-family: 'Noto Sans KR', sans-serif;
 
   &:hover {
     background: #f0f0f0;
@@ -172,6 +185,8 @@ const Notice = styled.div`
   font-size: 14px;
   color: #666;
   line-height: 1.5;
+  font-family: 'Noto Sans KR', sans-serif;
+  text-align: center;
 `;
 
 // 버튼 컨테이너 및 버튼 스타일
@@ -189,6 +204,7 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
   
   ${props => props.primary ? `
     background: #4174f6;
@@ -227,7 +243,6 @@ function SubscriptionApply() {
     setHasReadDescription(value);
     if (value === 'no') {
       alert('"아니오" 선택 시, 청약신청에 제한이 있습니다.');
-      // 아니오 선택시 체크박스들 초기화
       setAgreements({
         investmentDescription: false,
         download1: false,
@@ -254,7 +269,6 @@ function SubscriptionApply() {
       return false;
     }
     
-    // 필수 동의 항목만 체크
     const requiredAgreements = {
       investmentDescription: agreements.investmentDescription,
       download1: agreements.download1,
@@ -341,22 +355,24 @@ function SubscriptionApply() {
                 <SubTitle>설명서 교부 및 동의</SubTitle>
                 <RadioGroup>
                   <RadioQuestion>투자설명서를 확인하셨습니까?</RadioQuestion>
-                  <RadioLabel>
-                    <input
-                      type="radio"
-                      name="description"
-                      onChange={() => handleRadioChange('yes')}
-                    />
-                    예
-                  </RadioLabel>
-                  <RadioLabel>
-                    <input
-                      type="radio"
-                      name="description"
-                      onChange={() => handleRadioChange('no')}
-                    />
-                    아니오
-                  </RadioLabel>
+                  <RadioLabelContainer>
+                    <RadioLabel>
+                      <input
+                        type="radio"
+                        name="description"
+                        onChange={() => handleRadioChange('yes')}
+                      />
+                      예
+                    </RadioLabel>
+                    <RadioLabel>
+                      <input
+                        type="radio"
+                        name="description"
+                        onChange={() => handleRadioChange('no')}
+                      />
+                      아니오
+                    </RadioLabel>
+                  </RadioLabelContainer>
                 </RadioGroup>
 
                 <CheckboxGroup>
@@ -431,7 +447,8 @@ function SubscriptionApply() {
                     border: '1px solid #e5e8eb',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    marginTop: '8px'
+                    marginTop: '8px',
+                    fontFamily: 'Noto Sans KR',
                   }}
                 />
                 <Notice>

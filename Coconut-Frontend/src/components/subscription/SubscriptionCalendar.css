@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
 
 .calendar-container {
-  max-width: 1080px; /* Slightly reduced width */
+  max-width: 1080px;
   margin: 30px auto;
   background-color: #f8f9fa;
   border-radius: 20px;
   padding: 25px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
-  font-family: 'Noto Sans KR', sans-serif; /* Applied Noto Sans Korean font */
+  font-family: 'Noto Sans KR', sans-serif;
   color: #333D4B;
 }
 
@@ -36,7 +36,7 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px; /* Slightly reduced gap */
+  gap: 10px;
   padding-top: 15px;
 }
 
@@ -87,46 +87,71 @@
 }
 
 .event {
+  width: 100%;
   margin-top: 10px;
-  padding: 5px 8px;
+  padding: 8px 0;
   border-radius: 5px;
   font-size: 13px;
   line-height: 1.4;
   color: #333D4B;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  position: relative;
+  padding-left: 12px; /* Ensure text is not too close to the left */
+}
+
+.event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 5px 0 0 5px;
 }
 
 .event[data-type="공모주"] {
   background-color: #E3F2E1;
-  border-left: 4px solid #4CAF50; /* Green color for 공모주 */
 }
 
 .event[data-type="상장"] {
   background-color: #E7F1FA;
-  border-left: 4px solid #2196F3; /* Blue color for 상장 */
 }
 
 .event[data-type="환불"] {
   background-color: #FCE8E6;
-  border-left: 4px solid #F44336; /* Red color for 환불 */
+}
+
+.event[data-type="공모주"]::before {
+  background-color: #4CAF50; /* Green for 공모주 */
+}
+
+.event[data-type="상장"]::before {
+  background-color: #2196F3; /* Blue for 상장 */
+}
+
+.event[data-type="환불"]::before {
+  background-color: #F44336; /* Red for 환불 */
 }
 
 .event .event-title {
   color: inherit;
   font-size: 14px;
   font-weight: bold;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  width: 100%;
 }
 
 .event .event-company {
   color: #333D4B;
   font-size: 13px;
   font-weight: normal;
-  margin-top: 2px; /* Adds a little space between event title and company */
-  border-top: 1px solid #ddd; /* Divider line */
+  margin-top: 4px;
+  border-top: 1px solid #ddd;
   padding-top: 4px;
-  text-align: left;
+  width: 100%;
 }
 
 /* Today Button Styling */

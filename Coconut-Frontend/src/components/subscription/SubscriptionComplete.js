@@ -13,6 +13,7 @@ const ModalOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const ModalContainer = styled.div`
@@ -27,6 +28,7 @@ const ModalContainer = styled.div`
 
 const ModalContent = styled.div`
   padding: 40px;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Title = styled.h2`
@@ -48,12 +50,7 @@ const InfoCard = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-`;
-
-const Tr = styled.tr`
-  &:nth-child(odd) {
-    background: #f9fafb;
-  }
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Th = styled.th`
@@ -62,11 +59,19 @@ const Th = styled.th`
   font-weight: 500;
   text-align: left;
   width: 35%;
+  background: #f9fafb;
 `;
 
 const Td = styled.td`
   padding: 16px;
   color: #333;
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
 `;
 
 const Button = styled.button`
@@ -78,8 +83,11 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  margin: 0 auto;
-  display: block;
+  font-family: 'Noto Sans KR', sans-serif;
+
+  &:hover {
+    background-color: #3461d9;
+  }
 `;
 
 function SubscriptionComplete() {
@@ -87,33 +95,33 @@ function SubscriptionComplete() {
 
   return (
     <ModalOverlay onClick={() => navigate('/')}>
-      <ModalContainer onClick={e => e.stopPropagation()}>
+      <ModalContainer onClick={(e) => e.stopPropagation()}>
         <ModalContent>
           <Title>청약신청이 완료되었습니다!</Title>
 
           <InfoCard>
             <Table>
               <tbody>
-                <Tr>
+                <tr>
                   <Th>청약계좌</Th>
                   <Td>46309613-01 위탁계좌</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>종목</Th>
                   <Td>주식회사 에이펙스</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>청약수량</Th>
                   <Td>50주</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>청약증거금</Th>
                   <Td>400,000원</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>청약수수료</Th>
                   <Td>2,000원</Td>
-                </Tr>
+                </tr>
               </tbody>
             </Table>
           </InfoCard>
@@ -121,23 +129,26 @@ function SubscriptionComplete() {
           <InfoCard>
             <Table>
               <tbody>
-                <Tr>
+                <tr>
                   <Th>환불일</Th>
                   <Td>2024.10.28</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>환불금 이체계좌</Th>
                   <Td>46309613-01 위탁계좌</Td>
-                </Tr>
-                <Tr>
+                </tr>
+                <tr>
                   <Th>상장일</Th>
                   <Td>2024.11.01</Td>
-                </Tr>
+                </tr>
               </tbody>
             </Table>
           </InfoCard>
 
-          <Button onClick={() => navigate('/')}>확인</Button>
+          <ButtonContainer>
+            <Button onClick={() => navigate('/')}>확인</Button>
+            <Button onClick={() => navigate('/subscription/inquiry')}>신청청약 조회</Button>
+          </ButtonContainer>
         </ModalContent>
       </ModalContainer>
     </ModalOverlay>
