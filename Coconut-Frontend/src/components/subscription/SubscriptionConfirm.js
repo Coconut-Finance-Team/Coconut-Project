@@ -23,6 +23,7 @@ const ModalContainer = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const ModalContent = styled.div`
@@ -35,6 +36,7 @@ const Title = styled.h2`
   color: #333;
   margin-bottom: 32px;
   text-align: center;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Section = styled.div`
@@ -46,6 +48,7 @@ const SectionTitle = styled.h3`
   font-weight: 600;
   color: #333;
   margin-bottom: 16px;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const InfoCard = styled.div`
@@ -69,12 +72,14 @@ const Th = styled.th`
   text-align: left;
   border: 1px solid #f2f2f2;
   width: 25%;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Td = styled.td`
   padding: 16px;
   color: #333;
   border: 1px solid #f2f2f2;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const ButtonContainer = styled.div`
@@ -91,6 +96,7 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
   
   ${props => props.primary ? `
     background: #4174f6;
