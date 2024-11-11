@@ -1,5 +1,6 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+// Header.js
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import logo from '../../assets/logo.png';
 
@@ -7,20 +8,18 @@ const HeaderContainer = styled.header`
   background: #ffffff;
   border-bottom: 1px solid #f2f2f2;
   padding: 0 40px;
-  height: 56px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: 'Noto Sans KR', Arial, sans-serif;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  flex-wrap: nowrap;
 `;
 
 const LeftSection = styled.div`
   display: flex;
   align-items: center;
   gap: 40px;
-  min-width: 500px; /* 최소 너비 설정 */
+  min-width: 500px;
 `;
 
 const LogoContainer = styled(Link)`
@@ -28,7 +27,7 @@ const LogoContainer = styled(Link)`
   align-items: center;
   gap: 4px;
   text-decoration: none;
-  min-width: 150px; /* 최소 너비 설정 */
+  min-width: 150px;
 `;
 
 const LogoImage = styled.img`
@@ -51,13 +50,13 @@ const NavItem = styled(Link)`
   text-decoration: none;
   font-size: 17px;
   font-weight: ${props => props.isActive ? '600' : '400'};
-  padding: 4px 0;
+  padding: 8px 0;
   position: relative;
 
   &:after {
     content: '';
     position: absolute;
-    bottom: -17px;
+    bottom: -10px;
     left: 0;
     width: 100%;
     height: 2px;
@@ -69,10 +68,11 @@ const RightSection = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 250px; /* 최소 너비 설정 */
+  min-width: 350px;
+  flex-wrap: nowrap;
 `;
 
-const SearchBox = styled.div`
+const SearchBox = styled.form`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -91,13 +91,23 @@ const SearchInput = styled.input`
   font-size: 16px;
   color: #666;
   width: 100%;
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+const SearchButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 `;
 
 const SearchIcon = styled.svg`
   width: 18px;
   height: 18px;
   fill: #8b95a1;
-  cursor: pointer;
 `;
 
 const LoginButton = styled.button`
@@ -105,14 +115,59 @@ const LoginButton = styled.button`
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 15px;
+  padding: 6px 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
 `;
 
-function Header() {
+const WelcomeMessage = styled(Link)`
+  font-size: 15px;
+  color: #333;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const LogoutButton = styled.button`
+  background: transparent;
+  color: #8b95a1;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+`;
+
+function Header({ user, setUser }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleLoginClick = () => {
+    navigate('/Login');
+  };
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setUser(null);
+    navigate('/');
+  };
 
   return (
     <HeaderContainer>
@@ -136,14 +191,28 @@ function Header() {
       </LeftSection>
 
       <RightSection>
-        <SearchBox>
-          <SearchInput type="text" placeholder="종목을 검색하세요" />
-          <SearchIcon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" />
-          </SearchIcon>
+        <SearchBox onSubmit={handleSearch}>
+          <SearchInput
+            type="text"
+            placeholder="종목을 검색하세요"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <SearchButton type="submit" aria-label="Search">
+            <SearchIcon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" />
+            </SearchIcon>
+          </SearchButton>
         </SearchBox>
-        <LoginButton>로그인</LoginButton>
+        {user ? (
+          <>
+            <WelcomeMessage to="/account">{user.username}님 반갑습니다!</WelcomeMessage>
+            <LogoutButton onClick={handleLogoutClick}>로그아웃</LogoutButton>
+          </>
+        ) : (
+          <LoginButton onClick={handleLoginClick}>로그인</LoginButton>
+        )}
       </RightSection>
     </HeaderContainer>
   );
