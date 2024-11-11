@@ -5,6 +5,8 @@ import AssetLog from './account/AssetLog';
 import AssetSummary from './account/AssetSummary';
 import TransactionLog from './account/TransactionLog';
 import OrderLog from './account/OrderLog';
+import Sales from './account/Sales';
+import AccountManage from './account/AccountManage'; // AccountManage 컴포넌트 추가
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -51,6 +53,10 @@ const Account = () => {
         return <TransactionLog />;
       case 'orders':
         return <OrderLog />;
+      case 'sales':
+        return <Sales />;
+      case 'management': // 계좌관리 페이지 추가
+        return <AccountManage />;
       default:
         return <AssetLog />;
     }

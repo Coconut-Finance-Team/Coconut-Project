@@ -37,7 +37,7 @@ function AccountSidebar({ activePage, onMenuClick }) {
     { id: 'sales', label: '판매수익' },
     { id: 'dividends', label: '배당내역' },
     { id: 'interest', label: '이자내역' },
-    { id: 'management', label: '계좌관리' },
+    { id: 'management', label: '계좌관리' }, // 계좌관리 메뉴 항목 추가
   ];
 
   return (

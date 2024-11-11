@@ -1,5 +1,14 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useState } from 'react';
+import styled, { keyframes, createGlobalStyle } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
+
+const GlobalStyle = createGlobalStyle`
+ @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+ 
+ * {
+   font-family: 'Noto Sans KR', sans-serif;
+ }
+`;
 
 const Container = styled.div`
   display: flex;
@@ -118,7 +127,12 @@ const StockInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
   img {
     width: 24px;
     height: 24px;
@@ -127,38 +141,17 @@ const StockInfo = styled.div`
 `;
 
 function RealTimeChart() {
+  const navigate = useNavigate();
+
   const stocks = [
-    {
-      rank: 1,
-      name: '한화오션',
-      image: '/api/placeholder/24/24',
-      price: 33250,
-      change: 5450,
-      changePercent: 19.6,
-      volume: '15억원',
-      shares: '46,379주'
-    },
-    {
-      rank: 2,
-      name: '삼성전자',
-      image: '/api/placeholder/24/24',
-      price: 58000,
-      change: 700,
-      changePercent: 1.2,
-      volume: '13억원',
-      shares: '23,055주'
-    },
-    {
-      rank: 3,
-      name: '넥스틸',
-      image: '/api/placeholder/24/24',
-      price: 10750,
-      change: 1050,
-      changePercent: 10.8,
-      volume: '6.2억원',
-      shares: '58,274주'
-    }
+    { rank: 1, name: '한화오션', image: '/api/placeholder/24/24', price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '46,379주' },
+    { rank: 2, name: '삼성전자', image: '/api/placeholder/24/24', price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '23,055주' },
+    { rank: 3, name: '넥스틸', image: '/api/placeholder/24/24', price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '58,274주' }
   ];
+
+  const handleStockClick = (stock) => {
+    navigate(`/stock/${stock.rank}`, { state: { stock } });
+  };
 
   return (
     <Container>
@@ -194,7 +187,7 @@ function RealTimeChart() {
           </thead>
           <tbody>
             {stocks.map((stock) => (
-              <tr key={stock.rank}>
+              <tr key={stock.rank} onClick={() => handleStockClick(stock)}>
                 <Td>
                   <RankNumber>{stock.rank}</RankNumber>
                 </Td>

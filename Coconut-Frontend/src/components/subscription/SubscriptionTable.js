@@ -144,18 +144,25 @@ function SubscriptionTable() {
   ];
 
   const handleApply = (company) => {
-    navigate(`/subscription/apply/${company.id}`, { 
-      state: { 
-        company: {
-          ...company,
-          subscriptionPrice: '340,000원',
-          competitionRate: '7.89:1',
-          publicOfferingVolume: '540,000주',
-          equalDistributionVolume: '270,000주',
-          subscriptionCount: '38,271건',
-        }
-      } 
-    });
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      // 로그인이 되어 있지 않으면 로그인 페이지로 리디렉션
+      navigate('/Login');
+    } else {
+      // 로그인이 되어 있으면 신청 페이지로 이동
+      navigate(`/subscription/apply/${company.id}`, { 
+        state: { 
+          company: {
+            ...company,
+            subscriptionPrice: '340,000원',
+            competitionRate: '7.89:1',
+            publicOfferingVolume: '540,000주',
+            equalDistributionVolume: '270,000주',
+            subscriptionCount: '38,271건',
+          }
+        } 
+      });
+    }
   };
 
   return (
