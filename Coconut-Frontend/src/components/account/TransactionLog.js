@@ -1,5 +1,13 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
+
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+  
+  * {
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+`;
 
 const Container = styled.div`
   padding: 40px 0;
@@ -136,44 +144,47 @@ const TransactionLog = () => {
   ];
 
   return (
-    <Container>
-      <Title>거래내역</Title>
-      <AvailableAmount>주문 가능 원화: 6,630원</AvailableAmount>
+    <>
+      <GlobalStyle />
+      <Container>
+        <Title>거래내역</Title>
+        <AvailableAmount>주문 가능 원화: 6,630원</AvailableAmount>
 
-      <FilterContainer>
-        <FilterButton active>전체</FilterButton>
-        <FilterButton>거래</FilterButton>
-        <FilterButton>환전</FilterButton>
-        <FilterButton>입출금</FilterButton>
-        <FilterButton>입출고</FilterButton>
-      </FilterContainer>
+        <FilterContainer>
+          <FilterButton active>전체</FilterButton>
+          <FilterButton>거래</FilterButton>
+          <FilterButton>환전</FilterButton>
+          <FilterButton>입출금</FilterButton>
+          <FilterButton>입출고</FilterButton>
+        </FilterContainer>
 
-      <TransactionList>
-        {transactions.map((transaction, index) => (
-          <TransactionItem key={index}>
-            <TransactionInfo>
-              <TransactionDate>{transaction.date}</TransactionDate>
-              <TransactionTitle>{transaction.title}</TransactionTitle>
-              <TransactionDetail>{transaction.detail}</TransactionDetail>
-            </TransactionInfo>
-            <TransactionAmount>
-              {transaction.quantity ? (
-                <TransactionQuantity>{transaction.quantity}</TransactionQuantity>
-              ) : (
-                <>
-                  <Amount isPositive={transaction.amount > 0}>
-                    {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString()}원
-                  </Amount>
-                  {transaction.balance !== undefined && (
-                    <Balance>{transaction.balance.toLocaleString()}원</Balance>
-                  )}
-                </>
-              )}
-            </TransactionAmount>
-          </TransactionItem>
-        ))}
-      </TransactionList>
-    </Container>
+        <TransactionList>
+          {transactions.map((transaction, index) => (
+            <TransactionItem key={index}>
+              <TransactionInfo>
+                <TransactionDate>{transaction.date}</TransactionDate>
+                <TransactionTitle>{transaction.title}</TransactionTitle>
+                <TransactionDetail>{transaction.detail}</TransactionDetail>
+              </TransactionInfo>
+              <TransactionAmount>
+                {transaction.quantity ? (
+                  <TransactionQuantity>{transaction.quantity}</TransactionQuantity>
+                ) : (
+                  <>
+                    <Amount isPositive={transaction.amount > 0}>
+                      {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString()}원
+                    </Amount>
+                    {transaction.balance !== undefined && (
+                      <Balance>{transaction.balance.toLocaleString()}원</Balance>
+                    )}
+                  </>
+                )}
+              </TransactionAmount>
+            </TransactionItem>
+          ))}
+        </TransactionList>
+      </Container>
+    </>
   );
 };
 
