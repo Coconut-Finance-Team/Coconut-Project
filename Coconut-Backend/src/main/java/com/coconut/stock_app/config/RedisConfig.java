@@ -1,5 +1,6 @@
 package com.coconut.stock_app.config;
 
+import com.coconut.stock_app.dto.StockIndexDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -9,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -18,7 +18,7 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory();
+        return new LettuceConnectionFactory(); // 기본적으로 localhost:6379 사용
     }
 
     @Bean
@@ -39,11 +39,20 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, StockIndexDto> stockIndexRedisTemplate() {
+        RedisTemplate<String, StockIndexDto> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory());
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper()));
+        return template;
+    }
+
+    @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.registerModule(new JavaTimeModule()); // Java 8 Date/Time 지원
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Timestamp 비활성화
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // null 필드 제외
         return mapper;
     }
 }

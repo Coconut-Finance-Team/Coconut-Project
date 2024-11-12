@@ -2,10 +2,6 @@ package com.coconut.stock_app.service;
 
 import com.coconut.stock_app.config.ApiConfig;
 import com.coconut.stock_app.dto.StockChartDTO;
-import com.coconut.stock_app.entity.cloud.Stock;
-import com.coconut.stock_app.entity.cloud.StockChart;
-import com.coconut.stock_app.repository.cloud.StockChartRepository;
-import com.coconut.stock_app.repository.cloud.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -17,20 +13,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 
-import static java.lang.Thread.sleep;
-
 @Service
 @RequiredArgsConstructor
 public class KISWebSocketClient {
     private WebSocketClient webSocketClient;
     private boolean isSubscribed = false;
 
-    private final StockService stockService;
     private final ApiConfig apiConfig;
     private final KISApiService kisApiService;
 
     public void connect() throws URISyntaxException {
-        String approvalKey = kisApiService.getWebSocketKey();
+        String approvalKey = kisApiService.getApprovalKey();
         String uri = apiConfig.getStockPriceEndpoint() + "?approval_key=" + approvalKey;
 
         webSocketClient = new WebSocketClient(new URI(uri)) {
@@ -49,7 +42,7 @@ public class KISWebSocketClient {
                     // PINGPONG 메시지 처리
                     if (jsonObject.has("header") && "PINGPONG".equals(jsonObject.getJSONObject("header").optString("tr_id"))) {
                         if (!isSubscribed) {
-                            subscribeStock("005930", kisApiService.getWebSocketKey());
+                            subscribeStock("005930", kisApiService.getApprovalKey());
                             isSubscribed = true;
                         }
                         return;
@@ -131,6 +124,6 @@ public class KISWebSocketClient {
                 .time(tradeTime.toString())
                 .build();
 
-        stockService.saveToRedis(stockChartDTO);
+        kisApiService.saveToRedis(stockChartDTO);
     }
 }
