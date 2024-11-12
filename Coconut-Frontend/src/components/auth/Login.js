@@ -1,13 +1,118 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import styled from 'styled-components';
+import logo from '../../assets/logo.png';
+
+const Container = styled.div`
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: 'Noto Sans KR', Arial, sans-serif;
+`;
+
+const LogoImage = styled.img`
+  width: 140px;
+  margin-top: 80px;
+  margin-bottom: 40px;
+`;
+
+const FormContainer = styled.div`
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+`;
+
+const InfoText = styled.p`
+  margin-bottom: 30px;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+`;
+
+const InputGroup = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  justify-content: flex-start;
+`;
+
+const InputContainer = styled.div`
+  flex: 1;
+  margin-right: 0px;
+`;
+
+const Input = styled.input`
+  width: 80%;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  height: 40px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: #4174f6;
+  }
+`;
+
+const LoginButton = styled.button`
+  width: 100px;
+  height: 92px;
+  background-color: #4174f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.3s ease;
+  margin-top: -8px;
+  margin-left: -20px;
+
+  &:hover {
+    background-color: #3461d9;
+  }
+`;
+
+const LinkGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  font-size: 14px;
+  color: #666;
+  width: 100%;
+  gap: 20px;
+  margin-top: -8px;
+`;
+
+const Link = styled.span`
+  cursor: pointer;
+  text-decoration: underline;
+  
+  &:hover {
+    color: #333;
+  }
+`;
 
 function Login({ setUser }) {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
-
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -24,14 +129,13 @@ function Login({ setUser }) {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
 
-        // 사용자 정보 설정
         setUser({
           username: formData.username,
           accessToken: response.data.accessToken,
           refreshToken: response.data.refreshToken,
         });
 
-        navigate('/'); // 홈 페이지로 이동
+        navigate('/');
       } else {
         console.error("로그인 실패:", response.data.message);
       }
@@ -41,125 +145,49 @@ function Login({ setUser }) {
   };
 
   const handleSignupClick = () => {
-    navigate('/signin'); // 회원가입 페이지로 이동
+    navigate('/signin');
   };
 
   const handleFindIdPasswordClick = () => {
-    navigate('/findidpassword'); // ID/비밀번호 찾기 페이지로 이동
-  };
-
-  const styles = {
-    container: {
-      width: '100%',
-      height: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      fontFamily: "'Noto Sans KR', Arial, sans-serif",
-    },
-    formContainer: {
-      width: '100%',
-      maxWidth: '600px',
-      textAlign: 'center',
-    },
-    infoText: {
-      marginBottom: '30px',
-      fontSize: '18px',
-      color: '#666',
-      textAlign: 'center',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginBottom: '30px',
-    },
-    inputGroup: {
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '20px',
-      width: '100%',
-      justifyContent: 'flex-start',
-    },
-    inputContainer: {
-      flex: 1,
-      marginRight: '0px',
-    },
-    input: {
-      width: '80%',
-      padding: '15px',
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      fontSize: '18px',
-      height: '50px',
-      boxSizing: 'border-box',
-      marginBottom: '12px',
-    },
-    button: {
-      width: '140px',
-      height: '112px',
-      backgroundColor: '#4174f6',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '18px',
-      transition: 'backgroundColor 0.3s ease',
-      marginTop: '-12px',
-      marginLeft: '-30px',
-    },
-    linkGroup: {
-      display: 'flex',
-      justifyContent: 'center',
-      fontSize: '16px',
-      color: '#666',
-      width: '100%',
-      gap: '20px',
-      marginTop: '-8px',
-    },
-    link: {
-      cursor: 'pointer',
-      textDecoration: 'underline',
-    },
+    navigate('/findidpassword');
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.formContainer}>
-        <p style={styles.infoText}>모두를 위한 증권 플랫폼, 코코넛 증권</p>
-        <form style={styles.form} onSubmit={handleLogin}>
-          <div style={styles.inputGroup}>
-            <div style={styles.inputContainer}>
-              <input
+    <Container>
+      <LogoImage src={logo} alt="코코넛증권 로고" />
+      <FormContainer>
+        <InfoText>모두를 위한 증권 플랫폼, 코코넛 증권</InfoText>
+        <Form onSubmit={handleLogin}>
+          <InputGroup>
+            <InputContainer>
+              <Input
                 type="text"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="아이디"
-                style={styles.input}
+                autoComplete="username"
                 required
               />
-              <input
+              <Input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="비밀번호"
-                style={styles.input}
+                autoComplete="current-password"
                 required
               />
-            </div>
-            <button type="submit" style={styles.button}>로그인</button>
-          </div>
-        </form>
-        <div style={styles.linkGroup}>
-          <span style={styles.link} onClick={handleSignupClick}>회원가입</span>
-          <span style={styles.link} onClick={handleFindIdPasswordClick}>ID/비밀번호 찾기</span>
-        </div>
-      </div>
-    </div>
+            </InputContainer>
+            <LoginButton type="submit">로그인</LoginButton>
+          </InputGroup>
+        </Form>
+        <LinkGroup>
+          <Link onClick={handleSignupClick}>회원가입</Link>
+          <Link onClick={handleFindIdPasswordClick}>ID/비밀번호 찾기</Link>
+        </LinkGroup>
+      </FormContainer>
+    </Container>
   );
 }
 
