@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
+import { createGlobalStyle } from 'styled-components'; // createGlobalStyle 추가
 import dayjs from 'dayjs';
 
-const Container = styled.div`
-  padding: 40px 0;
-  background: #ffffff;
-  font-family: 'Noto Sans KR', sans-serif;
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+  * {
+    font-family: 'Noto Sans KR', sans-serif;
+  }
 `;
 
+const Container = styled.div`
+  padding: 40px 40px 0 5px;
+  background: #ffffff;
+`;
+
+// Transaction.js와 동일한 헤더 스타일
 const Title = styled.div`
   font-size: 26px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 24px;
-  padding-left: 0px;
+  margin-bottom: 32px;
 `;
 
 const MonthSelector = styled.div`
@@ -46,7 +53,6 @@ const AvailableAmount = styled.div`
   margin-bottom: 24px;
   padding-bottom: 24px;
   border-bottom: 1px solid #E5E8EB;
-  padding-left: 0px;
 `;
 
 const ProfitLabel = styled.div`
@@ -114,10 +120,9 @@ function Sales({ uuid }) {
         const salesHistory = response.data.sales_history || [];
         setOrders(salesHistory);
 
-        // 전체 수익 합계 계산
         const total = salesHistory.reduce((acc, order) => acc + order.profit, 0);
         setTotalProfit(total);
-        setError(null); // 오류 상태 초기화
+        setError(null);
       } catch (error) {
         setError('판매 기록을 불러오는 데 실패했습니다.');
         console.error(error);
@@ -136,40 +141,43 @@ function Sales({ uuid }) {
   };
 
   return (
-    <Container>
-      <Title>판매 수익</Title>
+    <>
+      <GlobalStyle />
+      <Container>
+        <Title>판매 수익</Title>
 
-      <MonthSelector>
-        <span onClick={() => changeMonth('previous')}>{'<'}</span>
-        {activeMonth.format('YYYY년 MM월')}
-        <span onClick={() => changeMonth('next')}>{'>'}</span>
-      </MonthSelector>
+        <MonthSelector>
+          <span onClick={() => changeMonth('previous')}>{'<'}</span>
+          {activeMonth.format('YYYY년 MM월')}
+          <span onClick={() => changeMonth('next')}>{'>'}</span>
+        </MonthSelector>
 
-      <AvailableAmount>주문 가능 원화: 6,630원</AvailableAmount>
+        <AvailableAmount>주문 가능 원화: 6,630원</AvailableAmount>
 
-      <ProfitLabel profit={totalProfit}>
-        금액 (수익률): {totalProfit >= 0 ? `+${totalProfit.toLocaleString()}원` : `${totalProfit.toLocaleString()}원`}
-      </ProfitLabel>
+        <ProfitLabel profit={totalProfit}>
+          금액 (수익률): {totalProfit >= 0 ? `+${totalProfit.toLocaleString()}원` : `${totalProfit.toLocaleString()}원`}
+        </ProfitLabel>
 
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+        {error && <div style={{ color: 'red' }}>{error}</div>}
 
-      <OrderList>
-        {orders.map(order => (
-          <OrderCard key={order.id}>
-            <OrderInfo>
-              <OrderDate>{order.date}</OrderDate>
-              <OrderTitle>{order.name} {order.quantity}주</OrderTitle>
-              <OrderDetail>수익률: {order.profit_rate}%</OrderDetail>
-            </OrderInfo>
-            <OrderStatus>
-              <Amount isPositive={order.profit > 0}>
-                {order.profit > 0 ? `+${order.profit.toLocaleString()}원` : `${order.profit.toLocaleString()}원`}
-              </Amount>
-            </OrderStatus>
-          </OrderCard>
-        ))}
-      </OrderList>
-    </Container>
+        <OrderList>
+          {orders.map(order => (
+            <OrderCard key={order.id}>
+              <OrderInfo>
+                <OrderDate>{order.date}</OrderDate>
+                <OrderTitle>{order.name} {order.quantity}주</OrderTitle>
+                <OrderDetail>수익률: {order.profit_rate}%</OrderDetail>
+              </OrderInfo>
+              <OrderStatus>
+                <Amount isPositive={order.profit > 0}>
+                  {order.profit > 0 ? `+${order.profit.toLocaleString()}원` : `${order.profit.toLocaleString()}원`}
+                </Amount>
+              </OrderStatus>
+            </OrderCard>
+          ))}
+        </OrderList>
+      </Container>
+    </>
   );
 }
 

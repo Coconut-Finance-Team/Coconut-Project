@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { ko } from 'date-fns/locale';
 import "react-datepicker/dist/react-datepicker.css";
@@ -7,13 +7,18 @@ import "react-datepicker/dist/react-datepicker.css";
 // 한글 로케일 등록
 registerLocale('ko', ko);
 
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+  * {
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+`;
+
 const Container = styled.div`
   padding: 40px 0;
   background: #ffffff;
-  font-family: 'Noto Sans KR', sans-serif;
 `;
-
-const Title = styled.h1`
+const Title = styled.div`
   font-size: 26px;
   font-weight: 600;
   color: #333;
@@ -188,60 +193,63 @@ function SubscriptionHistory() {
   });
 
   return (
-    <Container>
-      <Title>청약 내역</Title>
+    <>
+      <GlobalStyle />
+      <Container>
+        <Title>청약 내역</Title>
 
-      <DatePickerWrapper>
-        <DatePicker
-          selectsRange={true}
-          startDate={startDate}
-          endDate={endDate}
-          onChange={(update) => {
-            setDateRange(update);
-          }}
-          dateFormat="yyyy.MM.dd"
-          locale="ko"
-          isClearable={true}
-          placeholderText="조회할 기간을 선택해주세요"
-          monthsShown={2}
-        />
-      </DatePickerWrapper>
+        <DatePickerWrapper>
+          <DatePicker
+            selectsRange={true}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => {
+              setDateRange(update);
+            }}
+            dateFormat="yyyy.MM.dd"
+            locale="ko"
+            isClearable={true}
+            placeholderText="조회할 기간을 선택해주세요"
+            monthsShown={2}
+          />
+        </DatePickerWrapper>
 
-      <SubscriptionList>
-        {filteredSubscriptions.length > 0 ? (
-          filteredSubscriptions.map(subscription => (
-            <SubscriptionCard key={subscription.id}>
-              <CardHeader>
-                <CompanyName>{subscription.companyName}</CompanyName>
-                <Status status={subscription.status}>{subscription.status}</Status>
-              </CardHeader>
-              <CardContent>
-                <InfoRow>
-                  <span>청약일자</span>
-                  <span>{subscription.applicationDate}</span>
-                </InfoRow>
-                <InfoRow>
-                  <span>청약수량</span>
-                  <span>{subscription.quantity}주 / {subscription.amount.toLocaleString()}원</span>
-                </InfoRow>
-                <InfoRow>
-                  <span>환불일자</span>
-                  <span>{subscription.refundDate}</span>
-                </InfoRow>
-                <InfoRow>
-                  <span>상장일자</span>
-                  <span>{subscription.listingDate}</span>
-                </InfoRow>
-              </CardContent>
-            </SubscriptionCard>
-          ))
-        ) : (
-          <EmptyState>
-            선택하신 기간에 청약 내역이 없습니다.
-          </EmptyState>
-        )}
-      </SubscriptionList>
-    </Container>
+        <SubscriptionList>
+          {filteredSubscriptions.length > 0 ? (
+            filteredSubscriptions.map(subscription => (
+              <SubscriptionCard key={subscription.id}>
+                <CardHeader>
+                  <CompanyName>{subscription.companyName}</CompanyName>
+                  <Status status={subscription.status}>{subscription.status}</Status>
+                </CardHeader>
+                <CardContent>
+                  <InfoRow>
+                    <span>청약일자</span>
+                    <span>{subscription.applicationDate}</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <span>청약수량</span>
+                    <span>{subscription.quantity}주 / {subscription.amount.toLocaleString()}원</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <span>환불일자</span>
+                    <span>{subscription.refundDate}</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <span>상장일자</span>
+                    <span>{subscription.listingDate}</span>
+                  </InfoRow>
+                </CardContent>
+              </SubscriptionCard>
+            ))
+          ) : (
+            <EmptyState>
+              선택하신 기간에 청약 내역이 없습니다.
+            </EmptyState>
+          )}
+        </SubscriptionList>
+      </Container>
+    </>
   );
 }
 
