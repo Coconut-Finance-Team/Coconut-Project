@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import StockChart from './StockChart';
+import skLogo from '../../assets/sk.png';
+import samsungLogo from '../../assets/samsung.png';
+import naverLogo from '../../assets/naver.png';
 
 const mockChartData = [
   { time: '1', open: 17400, high: 17800, low: 17300, close: 17750, volume: 356971, buyVolume: 250000, sellVolume: 106971 },
@@ -106,8 +109,9 @@ const Header = styled.div`
 const StockLogo = styled.div`
   width: 48px;
   height: 48px;
-  background-color: #e0e0e0;
   border-radius: 50%;
+  background-color: #e0e0e0;
+  object-fit: cover;
 `;
 
 const StockInfo = styled.div`
@@ -492,13 +496,23 @@ function StockDetail() {
   return (
     <Container>
       <StockInfoContainer>
-        <Header>
-          <StockLogo />
-          <StockInfo>
-            <StockTitle>{stock.name}</StockTitle>
-            <StockCode>{stock.code}</StockCode>
-          </StockInfo>
-        </Header>
+      <Header>
+      <StockLogo
+        as="img"
+        src={
+          stock.name === 'SK하이닉스'
+            ? skLogo
+            : stock.name === '삼성전자'
+            ? samsungLogo
+            : naverLogo
+        }
+        alt={stock.name}
+      />
+      <StockInfo>
+        <StockTitle>{stock.name}</StockTitle>
+        <StockCode>{stock.code}</StockCode>
+      </StockInfo>
+    </Header>
         <StockPrice>{stock.price.toLocaleString()}원</StockPrice>
         <Tags>
           <Tag>차트</Tag>
