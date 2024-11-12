@@ -1,110 +1,79 @@
-// src/App.js
+// App.js
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import SubscriptionTable from './components/SubscriptionTable';
-import SubscriptionApply from './components/SubscriptionApply';
-import SubscriptionCalendar from './components/SubscriptionCalendar';
+import { Routes, Route, Navigate } from 'react-router-dom'; // BrowserRouter 제거
+import styled, { createGlobalStyle } from 'styled-components';
+import Header from './components/common/Header';
+import Footer from './components/common/Footer';
+import Homeboard from './components/Homeboard';
+import Account from './components/Account';
+import Subscription from './components/subscription/Subscription';
+import SubscriptionApply from './components/subscription/SubscriptionApply';
+import SubscriptionConfirm from './components/subscription/SubscriptionConfirm';
+import SubscriptionComplete from './components/subscription/SubscriptionComplete';
+import SubscriptionInquiry from './components/subscription/SubscriptionInquiry';
+import Login from './components/auth/Login';
+import Signin from './components/auth/Signin';
+import SigninUserInfo from './components/auth/SigninUserInfo';
+import SigninAddInfo from './components/auth/SigninAddInfo';
+import FindIdPassword from './components/auth/FindIdPassword';
+import RealTimeChart from './components/home/RealTimeChart';
+import StockDetail from './components/home/StockDetail';
+import ChartDetail from './components/home/ChartDetail';
+import SearchPage from './components/common/SearchPage';
+
+const GlobalStyle = createGlobalStyle`
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+`;
 
 function App() {
-  const [selectedTab, setSelectedTab] = useState('table');
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleTabClick = (tab) => {
-    setSelectedTab(tab);
-    if (tab === 'table') {
-      navigate('/'); // Go to SubscriptionTable
-    } else if (tab === 'calendar') {
-      navigate('/calendar'); // Go to SubscriptionCalendar
-    }
-  };
-
-  // Conditionally render the header title and tabs based on the route
-  const isApplyPage = location.pathname === '/apply';
+  const [user, setUser] = useState(null);
 
   return (
-    <div style={styles.appContainer}>
-      <Header />
-      <main style={styles.mainContent}>
-        {!isApplyPage && ( // Conditionally render this section
-          <>
-            <div style={styles.titleContainer}>
-              <h2 style={styles.titleLeft}>공모주 청약안내</h2>
-            </div>
-            <div style={styles.tabContainer}>
-              <span
-                onClick={() => handleTabClick('table')}
-                style={selectedTab === 'table' ? { ...styles.inactiveTab, ...styles.activeTab } : styles.inactiveTab}
-              >
-                청약종목안내
-              </span>
-              <span
-                onClick={() => handleTabClick('calendar')}
-                style={selectedTab === 'calendar' ? { ...styles.inactiveTab, ...styles.activeTab } : styles.inactiveTab}
-              >
-                청약일정조회
-              </span>
-            </div>
-          </>
-        )}
-        <Routes>
-          <Route path="/" element={<SubscriptionTable />} />
-          <Route path="/apply" element={<SubscriptionApply />} />
-          <Route path="/calendar" element={<SubscriptionCalendar />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <>
+      <GlobalStyle />
+      <AppContainer>
+        <Header user={user} setUser={setUser} />
+        <MainContent>
+          <Routes>
+            <Route path="/" element={<Homeboard />} />
+            <Route path="/account/*" element={user ? <Account /> : <Navigate to="/Login" replace />} />
+            <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
+            <Route path="/subscription/*" element={<Subscription />} />
+            <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
+            <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
+            <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+            <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+            <Route path="/Login" element={<Login setUser={setUser} />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/signup/userinfo" element={<SigninUserInfo />} />
+            <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
+            <Route path="/findidpassword" element={<FindIdPassword />} />
+            <Route path="/chart" element={<RealTimeChart />} />
+            <Route path="/stock/:stockId" element={<StockDetail />} />
+            <Route path="/chart/detail" element={<ChartDetail />} />
+            <Route path="/search" element={<SearchPage />} />
+          </Routes>
+        </MainContent>
+        <Footer />
+      </AppContainer>
+    </>
   );
 }
 
-const styles = {
-  appContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: '100vh',
-    backgroundColor: '#ffffff',
-  },
-  mainContent: {
-    flex: 1,
-    padding: '20px',
-  },
-  titleContainer: {
-    display: 'flex',
-    justifyContent: 'flex-start',
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto 20px',
-  },
-  titleLeft: {
-    fontSize: '24px',
-    fontWeight: '600',
-    color: '#333D4B',
-    fontFamily: '"Noto Sans KR", sans-serif',
-  },
-  tabContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '20px',
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  activeTab: {
-    borderBottom: '3px solid #333D4B',
-    fontWeight: '700',
-  },
-  inactiveTab: {
-    flex: 1,
-    textAlign: 'center',
-    padding: '15px 0',
-    color: '#8B95A1',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'color 0.2s ease-out, transform 0.2s ease-out',
-  },
-};
+const AppContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #ffffff;
+`;
+
+const MainContent = styled.main`
+  flex: 1;
+`;
 
 export default App;
