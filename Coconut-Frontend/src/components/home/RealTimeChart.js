@@ -163,7 +163,6 @@ function RealTimeChart() {
           <Title>실시간 차트</Title>
           <TimeStamp>오늘 12:33 기준</TimeStamp>
         </TitleWrapper>
-        <HideButton>투자위험 주식 숨기기</HideButton>
       </HeaderWrapper>
 
       <ChartContainer>
