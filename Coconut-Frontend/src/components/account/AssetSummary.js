@@ -46,7 +46,7 @@ const SmallText = styled.div`
   margin-top: 4px;
 `;
 
-function AssetSummary() {
+function AssetSummary({ krwBalance, usdBalance }) {
   return (
     <SummaryContainer>
       <Title>내 투자</Title>
@@ -55,8 +55,8 @@ function AssetSummary() {
           <span>원화</span>
           <span>출금가능 ⓘ</span>
         </AssetHeader>
-        <AssetValue>0원</AssetValue>
-        <SmallText>0원 출금가능</SmallText>
+        <AssetValue>{krwBalance}</AssetValue>
+        <SmallText>{krwBalance} 출금가능</SmallText>
       </AssetCard>
   
       <AssetCard>
@@ -64,8 +64,8 @@ function AssetSummary() {
           <span>달러</span>
           <span>출금가능 ⓘ</span>
         </AssetHeader>
-        <AssetValue>$0.00</AssetValue>
-        <SmallText>$0.00 출금가능</SmallText>
+        <AssetValue>{usdBalance}</AssetValue>
+        <SmallText>{usdBalance} 출금가능</SmallText>
       </AssetCard>
     </SummaryContainer>
   );
