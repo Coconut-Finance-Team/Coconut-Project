@@ -284,15 +284,23 @@ function SubscriptionApply() {
   };
 
   const validateQuantity = () => {
-    if (!quantity || quantity <= 0) {
+    const quantityNum = parseInt(quantity);
+    if (!quantity || quantityNum <= 0) {
       alert('청약 수량을 입력해주세요.');
       return false;
     }
-    if (quantity > 100) {
+    if (quantityNum > 100) {
       alert('청약 가능 수량을 초과할 수 없습니다.');
       return false;
     }
     return true;
+  };
+
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || parseInt(value) >= 0) {
+      setQuantity(value);
+    }
   };
 
   const handleNext = () => {
@@ -438,8 +446,9 @@ function SubscriptionApply() {
                 <SubTitle>청약 수량</SubTitle>
                 <input
                   type="number"
+                  min="0"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
+                  onChange={handleQuantityChange}
                   placeholder="청약하실 수량을 입력해주세요"
                   style={{
                     width: '100%',

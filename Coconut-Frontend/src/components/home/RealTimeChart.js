@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import skImage from '../../assets/sk.png';
+import samsungImage from '../../assets/samsung.png';
+import naverImage from '../../assets/naver.png';
 
 const GlobalStyle = createGlobalStyle`
  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -144,9 +147,9 @@ function RealTimeChart() {
   const navigate = useNavigate();
 
   const stocks = [
-    { rank: 1, name: '한화오션', image: '/api/placeholder/24/24', price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '46,379주' },
-    { rank: 2, name: '삼성전자', image: '/api/placeholder/24/24', price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '23,055주' },
-    { rank: 3, name: '넥스틸', image: '/api/placeholder/24/24', price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '58,274주' }
+    { rank: 1, name: 'SK하이닉스', image: skImage, price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '46,379주' },
+    { rank: 2, name: '삼성전자', image: samsungImage, price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '23,055주' },
+    { rank: 3, name: '네이버', image: naverImage, price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '58,274주' }
   ];
 
   const handleStockClick = (stock) => {

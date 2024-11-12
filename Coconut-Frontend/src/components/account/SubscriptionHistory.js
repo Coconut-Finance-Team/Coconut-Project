@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ko } from 'date-fns/locale';
+import "react-datepicker/dist/react-datepicker.css";
+
+// 한글 로케일 등록
+registerLocale('ko', ko);
 
 const Container = styled.div`
   padding: 40px 0;
   background: #ffffff;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 const Title = styled.h1`
@@ -16,27 +21,51 @@ const Title = styled.h1`
 `;
 
 const DatePickerWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 16px;
-  background: #F8F9FA;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: white;
   border-radius: 12px;
-`;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 
-const DateRangeContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
+  .react-datepicker-wrapper {
+    width: 100%;
+  }
 
-const CustomDatePicker = styled(DatePicker)`
-  padding: 8px 12px;
-  border: 1px solid #E5E8EB;
-  border-radius: 8px;
-  font-size: 14px;
-  width: 120px;
+  .react-datepicker {
+    border: 1px solid #e5e8eb;
+    border-radius: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .react-datepicker__header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e5e8eb;
+    border-top-right-radius: 12px;
+    border-top-left-radius: 12px;
+  }
+
+  .react-datepicker__day--selected {
+    background-color: #4174f6;
+    border-radius: 20px;
+  }
+
+  .react-datepicker__day--in-range {
+    background-color: rgba(65, 116, 246, 0.1);
+  }
+
+  .react-datepicker__day--in-selecting-range {
+    background-color: rgba(65, 116, 246, 0.2);
+  }
+
+  .react-datepicker__input-container input {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+  }
 `;
 
 const SubscriptionList = styled.div`
@@ -46,141 +75,171 @@ const SubscriptionList = styled.div`
 `;
 
 const SubscriptionCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #E5E8EB;
+  background: white;
+  border: 1px solid #e5e8eb;
   border-radius: 12px;
   padding: 24px;
-`;
-
-const CompanyInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
-`;
-
-const CompanyName = styled.div`
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-`;
-
-const Status = styled.div`
-  font-size: 14px;
-  color: ${props => {
-    switch (props.status) {
-      case '청약완료': return '#00C073';
-      case '배정확정': return '#4174F6';
-      case '환불완료': return '#666666';
-      default: return '#333333';
-    }
-  }};
-  font-weight: 500;
-`;
-
-const DetailRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 14px;
-  color: #666;
   
-  &:not(:last-child) {
-    margin-bottom: 8px;
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 `;
 
-function SubscriptionHistory() {
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const CompanyName = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+`;
+
+const Status = styled.div`
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background: ${props => {
+    switch (props.status) {
+      case '청약완료': return '#e6f3ff';
+      case '배정확정': return '#e6ffe6';
+      case '환불완료': return '#ffe6e6';
+      default: return '#f8f9fa';
+    }
+  }};
+  color: ${props => {
+    switch (props.status) {
+      case '청약완료': return '#0066cc';
+      case '배정확정': return '#00cc00';
+      case '환불완료': return '#cc0000';
+      default: return '#666666';
+    }
+  }};
+`;
+
+const CardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const InfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
   
-  // 샘플 데이터
+  span:first-child {
+    color: #666;
+  }
+  
+  span:last-child {
+    color: #333;
+    font-weight: 500;
+  }
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 48px 0;
+  color: #666;
+  font-size: 16px;
+`;
+
+function SubscriptionHistory() {
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [startDate, endDate] = dateRange;
+  
   const subscriptions = [
     {
       id: 1,
-      companyName: '주식회사 에이펙스',
+      companyName: '(주)에이펙스',
+      applicationDate: '2024.01.24',
       status: '청약완료',
-      date: '2024.10.24',
-      quantity: '50주',
-      amount: '400,000원',
-      refundDate: '2024.10.28',
-      listingDate: '2024.11.01'
+      quantity: 50,
+      amount: 400000,
+      refundDate: '2024.01.28',
+      listingDate: '2024.02.01'
     },
     {
       id: 2,
       companyName: '(주)쓰리빌리언',
+      applicationDate: '2024.01.15',
       status: '배정확정',
-      date: '2024.11.05',
-      quantity: '30주',
-      amount: '300,000원',
-      refundDate: '2024.11.08',
-      listingDate: '2024.11.14'
+      quantity: 30,
+      amount: 300000,
+      refundDate: '2024.01.19',
+      listingDate: '2024.01.25'
     }
   ];
 
-  const filteredSubscriptions = subscriptions.filter(sub => {
+  // 필터링된 청약 내역
+  const filteredSubscriptions = subscriptions.filter(subscription => {
     if (!startDate || !endDate) return true;
-    const subDate = new Date(sub.date.replace(/\./g, '-'));
-    return subDate >= startDate && subDate <= endDate;
+    
+    const subscriptionDate = new Date(subscription.applicationDate.replace(/\./g, '-'));
+    return subscriptionDate >= startDate && subscriptionDate <= endDate;
   });
 
   return (
     <Container>
-      <Title>청약내역</Title>
-      
+      <Title>청약 내역</Title>
+
       <DatePickerWrapper>
-        <DateRangeContainer>
-          <CustomDatePicker
-            selected={startDate}
-            onChange={date => setStartDate(date)}
-            selectsStart
-            startDate={startDate}
-            endDate={endDate}
-            dateFormat="yyyy.MM.dd"
-            placeholderText="시작일"
-          />
-          <span>~</span>
-          <CustomDatePicker
-            selected={endDate}
-            onChange={date => setEndDate(date)}
-            selectsEnd
-            startDate={startDate}
-            endDate={endDate}
-            minDate={startDate}
-            dateFormat="yyyy.MM.dd"
-            placeholderText="종료일"
-          />
-        </DateRangeContainer>
+        <DatePicker
+          selectsRange={true}
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(update) => {
+            setDateRange(update);
+          }}
+          dateFormat="yyyy.MM.dd"
+          locale="ko"
+          isClearable={true}
+          placeholderText="조회할 기간을 선택해주세요"
+          monthsShown={2}
+        />
       </DatePickerWrapper>
 
       <SubscriptionList>
-        {filteredSubscriptions.map(subscription => (
-          <SubscriptionCard key={subscription.id}>
-            <CompanyInfo>
-              <CompanyName>{subscription.companyName}</CompanyName>
-              <Status status={subscription.status}>{subscription.status}</Status>
-            </CompanyInfo>
-            <DetailRow>
-              <span>청약일자</span>
-              <span>{subscription.date}</span>
-            </DetailRow>
-            <DetailRow>
-              <span>청약수량</span>
-              <span>{subscription.quantity}</span>
-            </DetailRow>
-            <DetailRow>
-              <span>청약금액</span>
-              <span>{subscription.amount}</span>
-            </DetailRow>
-            <DetailRow>
-              <span>환불일자</span>
-              <span>{subscription.refundDate}</span>
-            </DetailRow>
-            <DetailRow>
-              <span>상장일자</span>
-              <span>{subscription.listingDate}</span>
-            </DetailRow>
-          </SubscriptionCard>
-        ))}
+        {filteredSubscriptions.length > 0 ? (
+          filteredSubscriptions.map(subscription => (
+            <SubscriptionCard key={subscription.id}>
+              <CardHeader>
+                <CompanyName>{subscription.companyName}</CompanyName>
+                <Status status={subscription.status}>{subscription.status}</Status>
+              </CardHeader>
+              <CardContent>
+                <InfoRow>
+                  <span>청약일자</span>
+                  <span>{subscription.applicationDate}</span>
+                </InfoRow>
+                <InfoRow>
+                  <span>청약수량</span>
+                  <span>{subscription.quantity}주 / {subscription.amount.toLocaleString()}원</span>
+                </InfoRow>
+                <InfoRow>
+                  <span>환불일자</span>
+                  <span>{subscription.refundDate}</span>
+                </InfoRow>
+                <InfoRow>
+                  <span>상장일자</span>
+                  <span>{subscription.listingDate}</span>
+                </InfoRow>
+              </CardContent>
+            </SubscriptionCard>
+          ))
+        ) : (
+          <EmptyState>
+            선택하신 기간에 청약 내역이 없습니다.
+          </EmptyState>
+        )}
       </SubscriptionList>
     </Container>
   );
