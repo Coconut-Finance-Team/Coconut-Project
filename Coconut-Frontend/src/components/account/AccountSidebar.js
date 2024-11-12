@@ -6,6 +6,8 @@ const SidebarContainer = styled.nav`
   border: 1px solid #E5E8EB;
   border-radius: 12px;
   padding: 16px;
+  width: 240px; // 고정 너비 설정
+  min-height: calc(100vh - 200px); // 최소 높이 설정
 `;
 
 const MenuItem = styled.button`
@@ -19,6 +21,7 @@ const MenuItem = styled.button`
   cursor: pointer;
   border-radius: 8px;
   margin: 4px 0;
+  transition: all 0.2s ease;
 
   &:hover {
     background: #F8F9FA;
@@ -35,9 +38,8 @@ function AccountSidebar({ activePage, onMenuClick }) {
     { id: 'transactions', label: '거래내역' },
     { id: 'orders', label: '주문내역' },
     { id: 'sales', label: '판매수익' },
-    { id: 'dividends', label: '배당내역' },
-    { id: 'interest', label: '이자내역' },
-    { id: 'management', label: '계좌관리' }, // 계좌관리 메뉴 항목 추가
+    { id: 'subscriptions', label: '청약내역' },
+    { id: 'management', label: '계좌관리' },
   ];
 
   return (
