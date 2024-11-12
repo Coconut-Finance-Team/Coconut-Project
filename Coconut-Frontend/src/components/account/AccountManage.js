@@ -1,23 +1,27 @@
-// AccountManage.js
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import RightsModal from './modal/RightModal';
 import PasswordModal from './modal/PwChangeModal';
 import TerminationModal from './modal/TerminationModal';
 
-// 전체 Container 관련 스타일
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+  * {
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+`;
+
 const Container = styled.div`
   padding: 40px 0;
   background: #ffffff;
-  font-family: 'Noto Sans KR', sans-serif;
 `;
 
+// Transaction.js와 동일한 헤더 스타일
 const Title = styled.div`
   font-size: 26px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 24px;
-  padding-left: 40px;
+  margin-bottom: 32px;
 `;
 
 const SectionTitle = styled.div`
@@ -25,14 +29,11 @@ const SectionTitle = styled.div`
   font-weight: 600;
   color: #333;
   margin-bottom: 16px;
-  padding-left: 40px;
 `;
 
 const InfoSection = styled.div`
   margin-bottom: 32px;
   border-bottom: 1px solid #E5E8EB;
-  padding-left: 40px;
-  padding-right: 40px;
 `;
 
 const InfoRow = styled.div`
@@ -48,10 +49,7 @@ const InfoRow = styled.div`
   }
 `;
 
-const ManageSection = styled.div`
-  padding-left: 40px;
-  padding-right: 40px;
-`;
+const ManageSection = styled.div``;
 
 const ManageRow = styled.div`
   display: flex;
@@ -104,56 +102,58 @@ function AccountManage() {
 
   const handleAccountTermination = () => {
     console.log("Account termination confirmed.");
-    // 계좌 해지 로직 추가
     closeAccountTerminationModal();
   };
 
   return (
-    <Container>
-      <Title>계좌 관리</Title>
+    <>
+      <GlobalStyle />
+      <Container>
+        <Title>계좌 관리</Title>
 
-      <SectionTitle>내 계좌 정보</SectionTitle>
-      <InfoSection>
-        <InfoRow>
-          <div>계좌번호</div>
-          <div>110-1234-1234</div>
-        </InfoRow>
-        <InfoRow>
-          <div>개설일</div>
-          <div>YYYY년 M월 DD일</div>
-        </InfoRow>
-        <InfoRow>
-          <div>금리</div>
-          <div>2.5%</div>
-        </InfoRow>
-      </InfoSection>
+        <SectionTitle>내 계좌 정보</SectionTitle>
+        <InfoSection>
+          <InfoRow>
+            <div>계좌번호</div>
+            <div>110-1234-1234</div>
+          </InfoRow>
+          <InfoRow>
+            <div>개설일</div>
+            <div>YYYY년 M월 DD일</div>
+          </InfoRow>
+          <InfoRow>
+            <div>금리</div>
+            <div>2.5%</div>
+          </InfoRow>
+        </InfoSection>
 
-      <SectionTitle>내 계좌 관리</SectionTitle>
-      <ManageSection>
-        <ManageRow onClick={openRightModal}>
-          <div>내 권리</div>
-          <Arrow>{'>'}</Arrow>
-        </ManageRow>
-        {isRightModalOpen && <RightsModal onClose={closeRightModal} />}
+        <SectionTitle>내 계좌 관리</SectionTitle>
+        <ManageSection>
+          <ManageRow onClick={openRightModal}>
+            <div>내 권리</div>
+            <Arrow>{'>'}</Arrow>
+          </ManageRow>
+          {isRightModalOpen && <RightsModal onClose={closeRightModal} />}
 
-        <ManageRow onClick={openPasswordModal}>
-          <div>계좌 비밀번호 변경</div>
-          <Arrow>{'>'}</Arrow>
-        </ManageRow>
-        {isPasswordModalOpen && <PasswordModal onClose={closePasswordModal} />}
+          <ManageRow onClick={openPasswordModal}>
+            <div>계좌 비밀번호 변경</div>
+            <Arrow>{'>'}</Arrow>
+          </ManageRow>
+          {isPasswordModalOpen && <PasswordModal onClose={closePasswordModal} />}
 
-        <ManageRow onClick={openAccountTerminationModal}>
-          <div>계좌 해지</div>
-          <Arrow>{'>'}</Arrow>
-        </ManageRow>
-        {isAccountTerminationModalOpen && (
-          <TerminationModal 
-            onClose={closeAccountTerminationModal} 
-            onTerminate={handleAccountTermination} 
-          />
-        )}
-      </ManageSection>
-    </Container>
+          <ManageRow onClick={openAccountTerminationModal}>
+            <div>계좌 해지</div>
+            <Arrow>{'>'}</Arrow>
+          </ManageRow>
+          {isAccountTerminationModalOpen && (
+            <TerminationModal 
+              onClose={closeAccountTerminationModal}
+              onTerminate={handleAccountTermination}
+            />
+          )}
+        </ManageSection>
+      </Container>
+    </>
   );
 }
 
