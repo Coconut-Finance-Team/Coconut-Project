@@ -185,7 +185,7 @@ const TerminationModal = ({ onClose }) => {
             </TerminationModalTitle>
             <TerminationContent>
               • 주식정보 서비스와 관련된 모든 정보가 삭제되고 복구할 수 없습니다.{"\n\n"}
-              • 서비스 해지 후에도 토스 앱은 계속 사용 가능합니다.{"\n\n"}
+              • 서비스 해지 후에도 주식관련정보 확인은 계속 사용 가능합니다.{"\n\n"}
               • 반복적으로 계좌를 폐쇄하는 경우 신규 계좌 개설이 제한될 수 있습니다.
             </TerminationContent>
             <TerminationFooter>

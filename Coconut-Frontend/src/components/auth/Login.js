@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
 import logo from '../../assets/logo.png';
+import googleLoginBtn from '../../assets/google.png';
 
 const Container = styled.div`
   width: 100%;
@@ -108,6 +109,20 @@ const Link = styled.span`
   }
 `;
 
+const GoogleLoginImage = styled.img`
+  width: 80%;
+  height: auto;
+  cursor: pointer;
+  margin: 0 auto;
+  margin-top: -50px;
+  margin-bottom: 20px;
+  display: block;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
 function Login({ setUser }) {
   const [formData, setFormData] = useState({
     username: '',
@@ -133,6 +148,7 @@ function Login({ setUser }) {
           username: formData.username,
           accessToken: response.data.accessToken,
           refreshToken: response.data.refreshToken,
+          isAdmin: response.data.isAdmin,
         });
 
         navigate('/');
@@ -141,6 +157,35 @@ function Login({ setUser }) {
       }
     } catch (error) {
       console.error("로그인 중 오류 발생:", error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const clientId = "YOUR_GOOGLE_CLIENT_ID";
+      const googleAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+      const redirectUri = "http://localhost:3000/auth/google/callback";
+      
+      const scope = [
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile"
+      ].join(" ");
+
+      const params = {
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        prompt: 'select_account',
+        access_type: 'offline',
+        scope
+      };
+
+      const searchParams = new URLSearchParams(params);
+      const url = `${googleAuthUrl}?${searchParams.toString()}`;
+
+      window.location.href = url;
+    } catch (error) {
+      console.error("Google 로그인 중 오류 발생:", error);
     }
   };
 
@@ -182,6 +227,11 @@ function Login({ setUser }) {
             <LoginButton type="submit">로그인</LoginButton>
           </InputGroup>
         </Form>
+        <GoogleLoginImage 
+          src={googleLoginBtn} 
+          alt="구글 로그인" 
+          onClick={handleGoogleLogin}
+        />
         <LinkGroup>
           <Link onClick={handleSignupClick}>회원가입</Link>
           <Link onClick={handleFindIdPasswordClick}>ID/비밀번호 찾기</Link>
