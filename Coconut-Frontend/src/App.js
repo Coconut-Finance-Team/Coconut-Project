@@ -20,7 +20,6 @@ import StockDetail from './components/home/StockDetail';
 import ChartDetail from './components/home/ChartDetail';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
-import LoginTest from './LoginTest';
 
 const GlobalStyle = createGlobalStyle`
   body {

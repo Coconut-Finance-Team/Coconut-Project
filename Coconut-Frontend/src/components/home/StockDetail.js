@@ -178,6 +178,19 @@ const ChartContainer = styled.div`
     height: 350px;
     padding: 8px;
   }
+  width: 95%;
+  height: 100%;
+  max-height: 400px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  transform: translateZ(0); 
+  will-change: transform; 
 `;
 
 const TableContainer = styled.div`
