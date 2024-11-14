@@ -6,8 +6,30 @@ const SidebarContainer = styled.nav`
   border: 1px solid #E5E8EB;
   border-radius: 12px;
   padding: 16px;
-  width: 240px; // 고정 너비 설정
-  min-height: calc(100vh - 200px); // 최소 높이 설정
+  width: 240px;
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #E5E8EB;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #D1D4D7;
+  }
 `;
 
 const MenuItem = styled.button`
@@ -45,7 +67,7 @@ function AccountSidebar({ activePage, onMenuClick }) {
   return (
     <SidebarContainer>
       {menuItems.map(item => (
-        <MenuItem 
+        <MenuItem
           key={item.id}
           active={activePage === item.id}
           onClick={() => onMenuClick(item.id)}

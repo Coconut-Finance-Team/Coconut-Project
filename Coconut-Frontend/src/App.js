@@ -1,6 +1,5 @@
-// App.js
 import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom'; // BrowserRouter 제거
+import { Routes, Route, Navigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
@@ -20,6 +19,7 @@ import RealTimeChart from './components/home/RealTimeChart';
 import StockDetail from './components/home/StockDetail';
 import ChartDetail from './components/home/ChartDetail';
 import SearchPage from './components/common/SearchPage';
+import AdminPage from './components/admin/AdminPage';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -32,6 +32,18 @@ const GlobalStyle = createGlobalStyle`
 
 function App() {
   const [user, setUser] = useState(null);
+  const isAdminPath = window.location.pathname.startsWith('/admin');
+
+  if (isAdminPath) {
+    return (
+      <>
+        <GlobalStyle />
+        <Routes>
+          <Route path="/admin/*" element={<AdminPage />} />
+        </Routes>
+      </>
+    );
+  }
 
   return (
     <>

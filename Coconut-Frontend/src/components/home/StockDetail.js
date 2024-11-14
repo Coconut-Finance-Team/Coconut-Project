@@ -156,14 +156,17 @@ const Tag = styled.span`
 const ChartContainer = styled.div`
   width: 95%;
   height: 100%;
-  max-height: 400px; // 높이를 좀 더 크게 설정하여 차트가 더 잘 보이게 합니다.
-  background-color: #ffffff; // 배경 색상 변경
-  border: 1px solid #e0e0e0; // 차트의 경계선을 더 부드럽게 수정
+  max-height: 400px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px; // 패딩 추가
+  padding: 16px;
+  overflow: hidden; // 추가
+  transform: translateZ(0); // 추가
+  will-change: transform; // 추가
 `;
 
 const TableContainer = styled.div`

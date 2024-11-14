@@ -6,6 +6,8 @@ import AssetLog from './account/AssetLog';
 import AssetSummary from './account/AssetSummary';
 import TransactionLog from './account/TransactionLog';
 import OrderLog from './account/OrderLog';
+import Sales from './account/Sales';
+import AccountManage from './account/AccountManage';
 import SubscriptionHistory from './account/SubscriptionHistory';
 import accountImage from '../assets/account.png';
 
@@ -174,6 +176,10 @@ function Account() {
         return <OrderLog />;
       case 'subscriptions':
         return <SubscriptionHistory />;
+      case 'sales':
+        return <Sales />;
+      case 'management':
+        return <AccountManage />;
       default:
         return <AssetLog />;
     }
