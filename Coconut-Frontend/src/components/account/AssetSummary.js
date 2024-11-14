@@ -53,7 +53,7 @@ function AssetSummary({ krwBalance, usdBalance }) {
       <AssetCard>
         <AssetHeader>
           <span>원화</span>
-          <span>출금가능 ⓘ</span>
+          <span>출금가능</span>
         </AssetHeader>
         <AssetValue>{krwBalance}</AssetValue>
         <SmallText>{krwBalance} 출금가능</SmallText>
@@ -62,7 +62,7 @@ function AssetSummary({ krwBalance, usdBalance }) {
       <AssetCard>
         <AssetHeader>
           <span>달러</span>
-          <span>출금가능 ⓘ</span>
+          <span>출금가능</span>
         </AssetHeader>
         <AssetValue>{usdBalance}</AssetValue>
         <SmallText>{usdBalance} 출금가능</SmallText>

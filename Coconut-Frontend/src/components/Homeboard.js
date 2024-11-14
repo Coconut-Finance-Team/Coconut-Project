@@ -7,18 +7,20 @@ const Container = styled.div`
   padding: 40px;
   max-width: 1300px;
   margin: 0 auto;
+  height: 100%;
 `;
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 40px;  // 섹션 간 간격 통일
+  gap: 40px;
+  height: 100%;
 `;
 
 const Section = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;  // 제목과 컨텐츠 사이 간격 통일
+  gap: 16px;
 `;
 
 const Title = styled.h2`
@@ -32,6 +34,13 @@ const MarketCards = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  min-height: 0; /* 중요: 그리드 아이템이 부모 높이를 초과하지 않도록 함 */
+`;
+
+const ChartContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  min-height: 0; /* 차트가 컨테이너 안에서 적절히 조절되도록 함 */
 `;
 
 const indices = [
@@ -57,13 +66,17 @@ function Homeboard() {
           <Title>시장 동향</Title>
           <MarketCards>
             {indices.map((index, i) => (
-              <IndexChart key={i} {...index} />
+              <ChartContainer key={i}>
+                <IndexChart {...index} />
+              </ChartContainer>
             ))}
           </MarketCards>
         </Section>
 
         <Section>
-          <RealTimeChart />
+          <ChartContainer>
+            <RealTimeChart />
+          </ChartContainer>
         </Section>
       </Wrapper>
     </Container>

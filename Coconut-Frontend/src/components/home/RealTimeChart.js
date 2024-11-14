@@ -167,13 +167,9 @@ function RealTimeChart() {
 
       <ChartContainer>
         <Categories>
-          <Category active>코코넛증권 거래대금</Category>
-          <Category>코코넛증권 거래량</Category>
-          <Category>거래대금</Category>
-          <Category>거래량</Category>
+          <Category active>코코넛증권 거래량</Category>
           <Category>급상승</Category>
           <Category>급하락</Category>
-          <Category>인기</Category>
         </Categories>
 
         <Table>
