@@ -163,6 +163,7 @@ const Tag = styled.span`
 `;
 
 const ChartContainer = styled.div`
+<<<<<<< HEAD
   width: 100%;
   height: 450px;
   background-color: #ffffff;
@@ -178,6 +179,21 @@ const ChartContainer = styled.div`
     height: 350px;
     padding: 8px;
   }
+=======
+  width: 95%;
+  height: 100%;
+  max-height: 400px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden; // 추가
+  transform: translateZ(0); // 추가
+  will-change: transform; // 추가
+>>>>>>> 1cc253567d1629fabc555f9096879e703085832a
 `;
 
 const TableContainer = styled.div`
