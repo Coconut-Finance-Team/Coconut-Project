@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
@@ -70,13 +70,26 @@ const Change = styled.div`
 `;
 
 const ChartSection = styled.div`
-  width: 410px;
+  flex: 1;
   height: 70px;
-  padding: 12px 0;
+  position: relative;
+`;
+
+const ChartWrapper = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
 `;
 
 const IndexChart = ({ name, value, change, changePercent }) => {
   const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const generateData = () => {
     const data = [];
@@ -128,18 +141,22 @@ const IndexChart = ({ name, value, change, changePercent }) => {
       </InfoSection>
 
       <ChartSection>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 12, right: 0, bottom: 12, left: 0 }}>
-            <YAxis domain={['dataMin', 'dataMax']} hide={true} padding={{ top: 5, bottom: 5 }} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={change < 0 ? '#4788ff' : '#ff4747'}
-              strokeWidth={1.5}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <ChartWrapper>
+          {mounted && (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 12, right: 0, bottom: 12, left: 0 }}>
+                <YAxis domain={['dataMin', 'dataMax']} hide={true} padding={{ top: 5, bottom: 5 }} />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={change < 0 ? '#4788ff' : '#ff4747'}
+                  strokeWidth={1.5}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </ChartWrapper>
       </ChartSection>
     </ChartContainer>
   );

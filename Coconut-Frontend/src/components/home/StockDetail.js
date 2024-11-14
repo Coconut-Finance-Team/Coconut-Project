@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import StockChart from './StockChart';
+import skLogo from '../../assets/sk.png';
+import samsungLogo from '../../assets/samsung.png';
+import naverLogo from '../../assets/naver.png';
 
 const mockChartData = [
   { time: '1', open: 17400, high: 17800, low: 17300, close: 17750, volume: 356971, buyVolume: 250000, sellVolume: 106971 },
@@ -69,10 +72,13 @@ const Container = styled.div`
   margin: 20px auto;
   padding: 16px;
   font-family: 'Noto Sans KR', sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
     flex-direction: column;
     padding: 8px;
+    gap: 12px;
   }
 `;
 
@@ -82,6 +88,12 @@ const StockInfoContainer = styled.div`
   border: 1px solid #f2f2f2;
   border-radius: 16px;
   padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const OrderBoxContainer = styled.div`
@@ -106,8 +118,9 @@ const Header = styled.div`
 const StockLogo = styled.div`
   width: 48px;
   height: 48px;
-  background-color: #e0e0e0;
   border-radius: 50%;
+  background-color: #e0e0e0;
+  object-fit: cover;
 `;
 
 const StockInfo = styled.div`
@@ -150,16 +163,49 @@ const Tag = styled.span`
 `;
 
 const ChartContainer = styled.div`
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> f3846cd6b0455ab4c91ae1d4e6702747a7ab9e82
+  width: 100%;
+  height: 450px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 20px 0;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    height: 350px;
+    padding: 8px;
+  }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> f3846cd6b0455ab4c91ae1d4e6702747a7ab9e82
   width: 95%;
   height: 100%;
-  max-height: 400px; // 높이를 좀 더 크게 설정하여 차트가 더 잘 보이게 합니다.
-  background-color: #ffffff; // 배경 색상 변경
-  border: 1px solid #e0e0e0; // 차트의 경계선을 더 부드럽게 수정
+  max-height: 400px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px; // 패딩 추가
+  padding: 16px;
+<<<<<<< HEAD
+  overflow: hidden; // 추가
+  transform: translateZ(0); // 추가
+  will-change: transform; // 추가
+>>>>>>> 1cc253567d1629fabc555f9096879e703085832a
+=======
+  overflow: hidden;
+  transform: translateZ(0); 
+  will-change: transform; 
+>>>>>>> f3846cd6b0455ab4c91ae1d4e6702747a7ab9e82
 `;
 
 const TableContainer = styled.div`
@@ -492,13 +538,23 @@ function StockDetail() {
   return (
     <Container>
       <StockInfoContainer>
-        <Header>
-          <StockLogo />
-          <StockInfo>
-            <StockTitle>{stock.name}</StockTitle>
-            <StockCode>{stock.code}</StockCode>
-          </StockInfo>
-        </Header>
+      <Header>
+      <StockLogo
+        as="img"
+        src={
+          stock.name === 'SK하이닉스'
+            ? skLogo
+            : stock.name === '삼성전자'
+            ? samsungLogo
+            : naverLogo
+        }
+        alt={stock.name}
+      />
+      <StockInfo>
+        <StockTitle>{stock.name}</StockTitle>
+        <StockCode>{stock.code}</StockCode>
+      </StockInfo>
+    </Header>
         <StockPrice>{stock.price.toLocaleString()}원</StockPrice>
         <Tags>
           <Tag>차트</Tag>

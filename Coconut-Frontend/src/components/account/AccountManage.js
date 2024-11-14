@@ -5,7 +5,6 @@ import RightsModal from './modal/RightModal';
 import PasswordModal from './modal/PwChangeModal';
 import TerminationModal from './modal/TerminationModal';
 
-// 전체 Container 관련 스타일
 const Container = styled.div`
   padding: 40px 0;
   background: #ffffff;
@@ -104,7 +103,6 @@ function AccountManage() {
 
   const handleAccountTermination = () => {
     console.log("Account termination confirmed.");
-    // 계좌 해지 로직 추가
     closeAccountTerminationModal();
   };
 
@@ -116,11 +114,11 @@ function AccountManage() {
       <InfoSection>
         <InfoRow>
           <div>계좌번호</div>
-          <div>110-1234-1234</div>
+          <div>110-184-4569</div>
         </InfoRow>
         <InfoRow>
           <div>개설일</div>
-          <div>YYYY년 M월 DD일</div>
+          <div>2024년 3월 12일</div>
         </InfoRow>
         <InfoRow>
           <div>금리</div>
