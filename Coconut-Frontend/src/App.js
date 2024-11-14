@@ -20,6 +20,7 @@ import StockDetail from './components/home/StockDetail';
 import ChartDetail from './components/home/ChartDetail';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
+import LoginTest from './LoginTest';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -48,12 +49,15 @@ function App() {
   return (
     <>
       <GlobalStyle />
-      <AppContainer>
+      <div>
         <Header user={user} setUser={setUser} />
-        <MainContent>
+        <main>
           <Routes>
             <Route path="/" element={<Homeboard />} />
-            <Route path="/account/*" element={user ? <Account /> : <Navigate to="/Login" replace />} />
+            <Route
+              path="/account/*"
+              element={user ? <Account /> : <Navigate to="/Login" replace />}
+            />
             <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
             <Route path="/subscription/*" element={<Subscription />} />
             <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
@@ -69,13 +73,16 @@ function App() {
             <Route path="/stock/:stockId" element={<StockDetail />} />
             <Route path="/chart/detail" element={<ChartDetail />} />
             <Route path="/search" element={<SearchPage />} />
+            {/* LoginTest 경로 추가 */}
+            <Route path="/logintest" element={<LoginTest />} />
           </Routes>
-        </MainContent>
+        </main>
         <Footer />
-      </AppContainer>
+      </div>
     </>
   );
 }
+
 
 const AppContainer = styled.div`
   display: flex;

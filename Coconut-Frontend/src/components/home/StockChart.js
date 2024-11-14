@@ -245,7 +245,12 @@ const StockChart = () => {
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 0
+          duration: 0  // 애니메이션 비활성화
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',  // x축 기준으로만 탐지
+          intersect: false  // 교차점 검사 비활성화
         },
         layout: {
           padding: {
@@ -254,10 +259,6 @@ const StockChart = () => {
             top: 20,
             bottom: 10
           }
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index',
         },
         scales: {
           x: {
@@ -304,28 +305,11 @@ const StockChart = () => {
             max: Math.max(...recentData.map(d => d.high)) * 1.0005
           }
         },
+
         plugins: {
-          legend: {
-            display: false
-          },
           tooltip: {
+            enabled: true,
             position: 'nearest',
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              label: (context) => {
-                const point = context.raw;
-                if (context.datasetIndex === 0) {
-                  return [
-                    `시가: ${point.o.toLocaleString()}원`,
-                    `고가: ${point.h.toLocaleString()}원`,
-                    `저가: ${point.l.toLocaleString()}원`,
-                    `종가: ${point.c.toLocaleString()}원`
-                  ];
-                }
-                return '';
-              }
-            },
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             titleColor: '#333',
             bodyColor: '#666',
@@ -334,10 +318,58 @@ const StockChart = () => {
             padding: 12,
             displayColors: false,
             titleFont: {
-              family: 'Noto Sans KR'
+              family: 'Noto Sans KR',
+              size: 12,
+              weight: '500'
             },
             bodyFont: {
-              family: 'Noto Sans KR'
+              family: 'Noto Sans KR',
+              size: 12
+            },
+            caretSize: 6,
+            cornerRadius: 8,
+            yAlign: 'bottom',
+            xAlign: 'center',
+            titleMarginBottom: 8,
+            boxPadding: 4,
+            callbacks: {
+              label: (context) => {
+                const point = context.raw;
+                if (context.datasetIndex === 0) {
+                  return [
+                    `시가: ${point.o?.toLocaleString()}원`,
+                    `고가: ${point.h?.toLocaleString()}원`,
+                    `저가: ${point.l?.toLocaleString()}원`,
+                    `종가: ${point.c?.toLocaleString()}원`
+                  ];
+                }
+                return '';
+              },
+              // 툴팁 제목 포맷
+              title: (tooltipItems) => {
+                return tooltipItems[0].label;
+              }
+            },
+            // 툴팁 지연 시간과 애니메이션 설정
+            animation: {
+              duration: 100
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        hover: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false,
+          animationDuration: 0
+        },
+        // 차트 전체 애니메이션 설정
+        transitions: {
+          active: {
+            animation: {
+              duration: 0
             }
           }
         }

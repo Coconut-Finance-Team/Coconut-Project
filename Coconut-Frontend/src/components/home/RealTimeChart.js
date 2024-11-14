@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import skImage from '../../assets/sk.png';
 import samsungImage from '../../assets/samsung.png';
 import naverImage from '../../assets/naver.png';
+
 
 const GlobalStyle = createGlobalStyle`
  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -145,6 +146,21 @@ const StockInfo = styled.div`
 
 function RealTimeChart() {
   const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
   const stocks = [
     { rank: 1, name: 'SK하이닉스', image: skImage, price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '46,379주' },
@@ -161,7 +177,7 @@ function RealTimeChart() {
       <HeaderWrapper>
         <TitleWrapper>
           <Title>실시간 차트</Title>
-          <TimeStamp>오늘 12:33 기준</TimeStamp>
+          <TimeStamp>오늘 {formatTime(currentTime)} 기준</TimeStamp>
         </TitleWrapper>
       </HeaderWrapper>
 

@@ -72,10 +72,13 @@ const Container = styled.div`
   margin: 20px auto;
   padding: 16px;
   font-family: 'Noto Sans KR', sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
     flex-direction: column;
     padding: 8px;
+    gap: 12px;
   }
 `;
 
@@ -85,6 +88,12 @@ const StockInfoContainer = styled.div`
   border: 1px solid #f2f2f2;
   border-radius: 16px;
   padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const OrderBoxContainer = styled.div`
@@ -154,19 +163,21 @@ const Tag = styled.span`
 `;
 
 const ChartContainer = styled.div`
-  width: 95%;
-  height: 100%;
-  max-height: 400px;
+  width: 100%;
+  height: 450px;
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin: 20px 0;
   padding: 16px;
-  overflow: hidden; // 추가
-  transform: translateZ(0); // 추가
-  will-change: transform; // 추가
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    height: 350px;
+    padding: 8px;
+  }
 `;
 
 const TableContainer = styled.div`
