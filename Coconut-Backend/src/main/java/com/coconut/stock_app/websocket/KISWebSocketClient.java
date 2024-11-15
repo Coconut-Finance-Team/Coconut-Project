@@ -7,8 +7,6 @@ import com.coconut.stock_app.repository.cloud.StockRepository;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -38,7 +36,7 @@ public class KISWebSocketClient {
     private final RedisTemplate<String, String> redisTemplate;
     private final KISApiService kisApiService;
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final StockRepository stockRepository;
     private final StockChartRepository stockChartRepository;
@@ -285,8 +283,10 @@ public class KISWebSocketClient {
 
     public void saveStockDataToMySQL() {
         List<StockChart> stockCharts = new ArrayList<>();
+
         // 모든 키 가져오기
         for (String key : redisTemplate.keys("stock-*")) {
+            System.out.println("bbb");
             // 키에서 StockCode 추출
             String stockCode = key.substring(6);
 
@@ -307,6 +307,7 @@ public class KISWebSocketClient {
             // Redis에서 데이터 가져오기
             List<String> stockDataList = redisTemplate.opsForList().range(key, 0, -1);
             if (stockDataList != null) {
+
                 for (String jsonData : stockDataList) {
                     try {
                         StockChartDTO dto = objectMapper.readValue(jsonData, StockChartDTO.class);
