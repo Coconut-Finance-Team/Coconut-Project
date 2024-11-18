@@ -20,13 +20,6 @@ import StockDetail from './components/home/StockDetail';
 import ChartDetail from './components/home/ChartDetail';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
-<<<<<<< HEAD
-<<<<<<< HEAD
-import LoginTest from './LoginTest';
-=======
->>>>>>> 1cc253567d1629fabc555f9096879e703085832a
-=======
->>>>>>> f3846cd6b0455ab4c91ae1d4e6702747a7ab9e82
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -60,9 +53,13 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Homeboard />} />
-            <Route
+            {/* <Route
               path="/account/*"
               element={user ? <Account /> : <Navigate to="/Login" replace />}
+            /> */}
+             <Route
+              path="/account/*"
+              element={<Account />}
             />
             <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
             <Route path="/subscription/*" element={<Subscription />} />
@@ -79,8 +76,6 @@ function App() {
             <Route path="/stock/:stockId" element={<StockDetail />} />
             <Route path="/chart/detail" element={<ChartDetail />} />
             <Route path="/search" element={<SearchPage />} />
-            {/* LoginTest 경로 추가 */}
-            <Route path="/logintest" element={<LoginTest />} />
           </Routes>
         </main>
         <Footer />
