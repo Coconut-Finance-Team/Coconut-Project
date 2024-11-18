@@ -53,9 +53,13 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Homeboard />} />
-            <Route
+            {/* <Route
               path="/account/*"
               element={user ? <Account /> : <Navigate to="/Login" replace />}
+            /> */}
+             <Route
+              path="/account/*"
+              element={<Account />}
             />
             <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
             <Route path="/subscription/*" element={<Subscription />} />
@@ -72,8 +76,6 @@ function App() {
             <Route path="/stock/:stockId" element={<StockDetail />} />
             <Route path="/chart/detail" element={<ChartDetail />} />
             <Route path="/search" element={<SearchPage />} />
-            {/* LoginTest 경로 추가 */}
-            <Route path="/logintest" element={<LoginTest />} />
           </Routes>
         </main>
         <Footer />
