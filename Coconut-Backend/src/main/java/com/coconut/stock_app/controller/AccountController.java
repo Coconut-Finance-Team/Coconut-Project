@@ -1,16 +1,20 @@
 package com.coconut.stock_app.controller;
 
+import com.coconut.stock_app.dto.account.AccountCreationRequest;
+import com.coconut.stock_app.dto.account.AccountCreationResponse;
+import com.coconut.stock_app.service.AccountService;
+import com.coconut.stock_app.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import com.coconut.stock_app.authentication.oauth.AuthenticationService;
 import com.coconut.stock_app.dto.account.*;
 import com.coconut.stock_app.entity.on_premise.User;
-import com.coconut.stock_app.service.AccountService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 
@@ -21,6 +25,13 @@ public class AccountController {
 
     private final AccountService accountService;
     private final AuthenticationService authenticationService;
+    private final UserService userService;
+
+    @PostMapping("/account/create")
+    public ResponseEntity<AccountCreationResponse> createAccount(@RequestBody AccountCreationRequest request) {
+        AccountCreationResponse response = accountService.createAccount(request);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/account/assets")
     ResponseEntity<AssetDTO> getAccountAssets() {
@@ -61,8 +72,6 @@ public class AccountController {
         TradeDetailDTO tradeDetailDTO = accountService.getTradeDetail(tradeId);
         return ResponseEntity.ok(tradeDetailDTO);
     }
-
-
 
     @GetMapping("/account/transactions/deposits-withdrawals/detail/{transaction_id}")
     ResponseEntity<TransactionAmountDTO> getTransactionsDepositsAndWithdrawalsDetail(@PathVariable(name = "transaction_id") Long transactionId) {

@@ -1,8 +1,6 @@
 package com.coconut.stock_app.service;
 
 import com.coconut.stock_app.dto.account.*;
-import org.springframework.web.bind.annotation.PathVariable;
-
 import java.util.List;
 
 public interface AccountService {
@@ -17,4 +15,5 @@ public interface AccountService {
     List<ProfitLossDTO> getAccountSalesProfit(String uuid);
     ProfitLossDTO getAccountSalesProfitDetail(Long sales_id);
     AccountDTO getAccount(String uuid);
+    AccountCreationResponse createAccount(AccountCreationRequest request);
 }
