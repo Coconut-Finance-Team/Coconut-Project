@@ -125,7 +125,7 @@ const GoogleLoginImage = styled.img`
 
 function Login({ setUser }) {
   const [formData, setFormData] = useState({
-    username: '',
+    id: '',
     password: '',
   });
   const navigate = useNavigate();
@@ -136,57 +136,40 @@ function Login({ setUser }) {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // 기본 동작 막기
     try {
-      const response = await axios.post('https://204affe3-b063-4855-a90d-f1a534314a8c.mock.pstmn.io/Login', formData);
-      if (response.status === 200) {
-        console.log("로그인 성공:", response.data);
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+      const response = await fetch('http://localhost:8080/api/v1/authenticate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: formData.id, // Spring Security의 기본 키 'username'으로 변경해야 할 경우 수정
+          password: formData.password,
+        }),
+      });
 
-        setUser({
-          username: formData.username,
-          accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
-          isAdmin: response.data.isAdmin,
-        });
-
-        navigate('/');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('로그인 성공:', data);
+        // JWT 토큰 저장 및 리디렉션 처리
+        localStorage.setItem('jwtToken', data.token);
+        alert('로그인 성공!');
+        navigate('/dashboard'); // 로그인 후 이동할 페이지
       } else {
-        console.error("로그인 실패:", response.data.message);
+        const errorData = await response.json();
+        console.error('로그인 실패:', errorData);
+        alert(`로그인 실패: ${errorData.message || '알 수 없는 오류'}`);
       }
     } catch (error) {
-      console.error("로그인 중 오류 발생:", error);
+      console.error('로그인 요청 중 오류 발생:', error);
+      alert('로그인 요청 중 오류가 발생했습니다.');
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      const clientId = "YOUR_GOOGLE_CLIENT_ID";
-      const googleAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
-      const redirectUri = "http://localhost:3000/auth/google/callback";
-      
-      const scope = [
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"
-      ].join(" ");
-
-      const params = {
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        prompt: 'select_account',
-        access_type: 'offline',
-        scope
-      };
-
-      const searchParams = new URLSearchParams(params);
-      const url = `${googleAuthUrl}?${searchParams.toString()}`;
-
-      window.location.href = url;
-    } catch (error) {
-      console.error("Google 로그인 중 오류 발생:", error);
-    }
+  const handleGoogleLogin = () => {
+    const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
+    window.location.href = springBootAuthUrl;
   };
 
   const handleSignupClick = () => {
@@ -207,11 +190,11 @@ function Login({ setUser }) {
             <InputContainer>
               <Input
                 type="text"
-                name="username"
-                value={formData.username}
+                name="id"
+                value={formData.id}
                 onChange={handleChange}
                 placeholder="아이디"
-                autoComplete="username"
+                autoComplete="id"
                 required
               />
               <Input
