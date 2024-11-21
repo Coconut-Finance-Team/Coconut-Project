@@ -167,10 +167,14 @@ function Login({ setUser }) {
     }
   };
 
-  const handleGoogleLogin = () => {
+const handleGoogleLogin = async () => {
+  try {
     const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
     window.location.href = springBootAuthUrl;
-  };
+  } catch (error) {
+    console.error("Google 로그인 중 오류 발생:", error);
+  }
+};
 
   const handleSignupClick = () => {
     navigate('/signin');
