@@ -122,14 +122,14 @@ function Signin() {
   };
 
   const verifyCode = () => {
-    if (verificationCode !== sentCode) {
-      setErrorMessage('인증번호가 일치하지 않습니다. 다시 확인해 주세요.');
-      return;
-    }
-    if (!formData.agreeTerms || !formData.agreeService || !formData.agreePrivacy || !formData.agreeThirdParty) {
-      setErrorMessage('인증 및 약관동의를 모두 완료해주세요.');
-      return;
-    }
+    // if (verificationCode !== sentCode) {
+    //   setErrorMessage('인증번호가 일치하지 않습니다. 다시 확인해 주세요.');
+    //   return;
+    // }
+    // if (!formData.agreeTerms || !formData.agreeService || !formData.agreePrivacy || !formData.agreeThirdParty) {
+    //   setErrorMessage('인증 및 약관동의를 모두 완료해주세요.');
+    //   return;
+    // }
     navigate('/signup/userinfo', { state: { ...formData } });
   };
 

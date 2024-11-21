@@ -1,53 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import styled, { createGlobalStyle } from 'styled-components';
-import koreaFlag from '../../assets/korea.png'; // 국기 이미지 가져오기
-
-const generateChartData = (basePrice, days, isKospi) => {
-  const data = [];
-  let currentPrice = basePrice;
-  const pointsPerDay = 72;
-  const totalPoints = days * pointsPerDay;
-
-  for (let i = 0; i < totalPoints; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - days + Math.floor(i / pointsPerDay));
-    date.setHours(9 + Math.floor((i % pointsPerDay) / 12));
-    date.setMinutes((i % 12) * 5);
-
-    const change = (Math.random() - 0.5) * (isKospi ? 0.004 : 0.006);
-    currentPrice = currentPrice * (1 + change);
-
-    let timeLabel;
-    if (days === 1) {
-      timeLabel = date.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-    } else if (days <= 7) {
-      timeLabel = date.toLocaleDateString('ko-KR', {
-        weekday: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-    } else {
-      timeLabel = date.toLocaleDateString('ko-KR', {
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-
-    data.push({
-      time: timeLabel,
-      value: Math.round(currentPrice * 100) / 100
-    });
-  }
-
-  return data;
-};
+import koreaFlag from '../../assets/korea.png';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -161,6 +116,101 @@ const PriceIndicator = styled.div`
   pointer-events: none;
 `;
 
+const generateChartData = (basePrice, days, isKospi) => {
+  const data = [];
+  let currentPrice = basePrice;
+  const now = new Date();
+  
+  // 기간별 데이터 포인트 및 변동성 설정
+  const getTimeConfig = () => {
+    if (days === 1) {
+      return { 
+        pointsPerDay: 72,  // 5분 간격
+        volatility: 0.0002,
+        interval: 1000 * 60 * 5
+      };
+    } else if (days <= 7) {
+      return { 
+        pointsPerDay: 24,  // 1시간 간격
+        volatility: 0.001,
+        interval: 1000 * 60 * 60
+      };
+    } else if (days <= 30) {
+      return { 
+        pointsPerDay: 4,   // 6시간 간격
+        volatility: 0.002,
+        interval: 1000 * 60 * 60 * 6
+      };
+    } else if (days <= 365) {
+      return { 
+        pointsPerDay: 1,   // 1일 간격
+        volatility: 0.003,
+        interval: 1000 * 60 * 60 * 24
+      };
+    } else {
+      return { 
+        pointsPerDay: 1/7, // 1주 간격
+        volatility: 0.004,
+        interval: 1000 * 60 * 60 * 24 * 7
+      };
+    }
+  };
+
+  const { pointsPerDay, volatility, interval } = getTimeConfig();
+  const totalPoints = Math.floor(days * pointsPerDay);
+  
+  // 전체적인 추세 설정 (상승/하락)
+  const trend = Math.random() * 2 - 1; // -1에서 1 사이의 값
+  
+  // 시간대별 추세 생성 (더 자연스러운 움직임을 위해)
+  const trendPoints = Array.from({ length: Math.ceil(totalPoints / 10) }, () => 
+    Math.random() * 2 - 1 + trend
+  );
+  
+  for (let i = 0; i < totalPoints; i++) {
+    const date = new Date(now - ((totalPoints - i) * interval));
+    
+    // 현재 구간의 추세 반영
+    const trendIndex = Math.floor(i / 10);
+    const currentTrend = trendPoints[trendIndex] || trend;
+    
+    // 변동성에 추세 반영
+    const trendComponent = currentTrend * volatility * 0.5;
+    const randomComponent = (Math.random() - 0.5) * volatility;
+    currentPrice = currentPrice * (1 + trendComponent + randomComponent);
+
+    // 시간 포맷팅
+    let timeLabel;
+    if (days === 1) {
+      timeLabel = date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    } else if (days <= 7) {
+      timeLabel = `${date.toLocaleDateString('ko-KR', {
+        weekday: 'short'
+      })} ${date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })}`;
+    } else {
+      timeLabel = date.toLocaleDateString('ko-KR', {
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    data.push({
+      time: timeLabel,
+      value: Math.round(currentPrice * 100) / 100
+    });
+  }
+
+  return data;
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -182,6 +232,8 @@ function ChartDetail() {
   const location = useLocation();
   const [hoveredPrice, setHoveredPrice] = useState(null);
   const [hoveredY, setHoveredY] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [timeframe, setTimeframe] = useState('1일');
 
   const marketData = location?.state?.marketData || {
     name: '코스피',
@@ -191,25 +243,60 @@ function ChartDetail() {
     isKospi: true
   };
 
-  const [timeframe, setTimeframe] = useState('1D');
-  const [chartData, setChartData] = useState(() =>
-    generateChartData(
+  useEffect(() => {
+    // 초기 데이터 설정
+    const initialData = generateChartData(
       marketData.value,
-      timeframe === '1D' ? 1 :
-      timeframe === '1W' ? 7 :
-      timeframe === '1M' ? 30 :
-      timeframe === '5Y' ? 1825 : 365,
+      timeframe === '1일' ? 1 :
+      timeframe === '1주일' ? 7 :
+      timeframe === '1개월' ? 30 :
+      timeframe === '5년' ? 1825 : 365,
       marketData.isKospi
-    )
-  );
+    );
+    setChartData(initialData);
+
+    // 1일 차트일 때만 실시간 업데이트
+    if (timeframe === '1일') {
+      const interval = setInterval(() => {
+        setChartData(prevData => {
+          const newData = [...prevData];
+          const lastValue = newData[newData.length - 1].value;
+          const now = new Date();
+          
+          // 새로운 데이터 포인트 추가
+          const volatility = 0.0002;
+          const newValue = lastValue * (1 + (Math.random() - 0.5) * volatility);
+          
+          newData.push({
+            time: now.toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            }),
+            value: Math.round(newValue * 100) / 100
+          });
+          
+          // 72개 포인트 유지
+          if (newData.length > 72) {
+            newData.shift();
+          }
+          
+          return newData;
+        });
+      }, 5000); // 5초마다 업데이트
+
+      return () => clearInterval(interval);
+    }
+  }, [timeframe, marketData.value, marketData.isKospi]);
 
   const handleTimeframeChange = (newTimeframe) => {
     setTimeframe(newTimeframe);
-    const days = newTimeframe === '1D' ? 1 :
-                 newTimeframe === '1W' ? 7 :
-                 newTimeframe === '1M' ? 30 :
-                 newTimeframe === '5Y' ? 1825 : 365;
-    setChartData(generateChartData(marketData.value, days, marketData.isKospi));
+    const days = newTimeframe === '1일' ? 1 :
+                newTimeframe === '1주일' ? 7 :
+                newTimeframe === '1개월' ? 30 :
+                newTimeframe === '5년' ? 1825 : 365;
+    const newData = generateChartData(marketData.value, days, marketData.isKospi);
+    setChartData(newData);
   };
 
   const handleMouseMove = (props) => {
@@ -232,7 +319,7 @@ function ChartDetail() {
           <div>
             <MarketName>
               {marketData.name}
-              <img src={koreaFlag} alt="Korea Flag" /> {/* 국기 이미지 추가 */}
+              <img src={koreaFlag} alt="Korea Flag" />
             </MarketName>
             <PriceInfo>
               <CurrentPrice>
