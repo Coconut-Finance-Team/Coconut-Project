@@ -160,34 +160,14 @@ function Login({ setUser }) {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      const clientId = "YOUR_GOOGLE_CLIENT_ID";
-      const googleAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
-      const redirectUri = "http://localhost:3000/auth/google/callback";
-      
-      const scope = [
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"
-      ].join(" ");
-
-      const params = {
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        prompt: 'select_account',
-        access_type: 'offline',
-        scope
-      };
-
-      const searchParams = new URLSearchParams(params);
-      const url = `${googleAuthUrl}?${searchParams.toString()}`;
-
-      window.location.href = url;
-    } catch (error) {
-      console.error("Google 로그인 중 오류 발생:", error);
-    }
-  };
+const handleGoogleLogin = async () => {
+  try {
+    const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
+    window.location.href = springBootAuthUrl;
+  } catch (error) {
+    console.error("Google 로그인 중 오류 발생:", error);
+  }
+};
 
   const handleSignupClick = () => {
     navigate('/signin');
