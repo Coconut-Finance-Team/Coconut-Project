@@ -129,74 +129,56 @@ function KospiChart() {
   });
 
   useEffect(() => {
-    let ws = null;
-  
-    const connectWebSocket = () => {
-      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
-      
-      ws.onopen = () => {
-        console.log('WebSocket Connected');
-      };
-  
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          // KOSPI 데이터 처리
-          if (data.kospi && data.kospi.length > 0) {
-            // 모든 데이터를 파싱하여 배열로 변환
-            const parsedData = data.kospi.map(item => {
-              const parsed = JSON.parse(item);
-              return {
-                time: parsed.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
-                value: parseFloat(parsed.currentIndex)
-              };
-            });
-
-            // 시간순으로 정렬
-            parsedData.sort((a, b) => {
-              return a.time.localeCompare(b.time);
-            });
-
-            setChartData(parsedData);
-
-            // 변화량 계산
-            if (parsedData.length > 0) {
-              const firstValue = parsedData[0].value;
-              const currentValue = parsedData[parsedData.length - 1].value;
-              const change = currentValue - firstValue;
-              const changePercent = (change / firstValue) * 100;
-
-              setMarketData({
-                value: currentValue,
-                change,
-                changePercent
-              });
-
-              setLastUpdate(currentValue);
-            }
-          }
-        } catch (error) {
-          console.error('Error processing WebSocket data:', error);
-        }
-      };
-  
-      ws.onclose = (event) => {
-        console.log('WebSocket Disconnected:', event.code, event.reason);
-        setTimeout(connectWebSocket, 3000);
-      };
-  
-      ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-      };
+    const ws = new WebSocket('ws://localhost:8080/ws/stock/0001');
+    
+    ws.onopen = () => {
+      console.log('WebSocket Connected');
     };
   
-    connectWebSocket();
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const formattedTime = data.time.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3');
+        
+        setChartData(prevData => {
+          const newData = [...prevData, {
+            time: formattedTime,
+            value: data.currentPrice
+          }];
+          
+          // Keep last 100 data points for better performance
+          if (newData.length > 100) {
+            newData.shift();
+          }
+          
+          // Calculate market data
+          if (newData.length > 0) {
+            const firstValue = newData[0].value;
+            const currentValue = data.currentPrice;
+            const change = currentValue - firstValue;
+            const changePercent = (change / firstValue) * 100;
+  
+            setMarketData({
+              value: currentValue,
+              change,
+              changePercent
+            });
+          }
+          
+          return newData;
+        });
+  
+      } catch (error) {
+        console.error('Error processing WebSocket data:', error);
+      }
+    };
+  
+    ws.onclose = () => {
+      console.log('WebSocket Disconnected');
+    };
   
     return () => {
-      if (ws) {
-        ws.close();
-      }
+      ws.close();
     };
   }, []);
 
