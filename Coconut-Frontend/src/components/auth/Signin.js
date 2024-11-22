@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 function Signin() {
+  const location = useLocation();
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,147 +18,196 @@ function Signin() {
     agreeThirdParty: false,
     agreeFinancial: false,
   });
-  const [verificationCode, setVerificationCode] = useState('');
-  const [sentCode, setSentCode] = useState('');
-  const [countdown, setCountdown] = useState(0);
-  const [errorMessage, setErrorMessage] = useState('');
-  const navigate = useNavigate();
+ const [verificationCode, setVerificationCode] = useState('');
+ const [countdown, setCountdown] = useState(0);
+ const [errorMessage, setErrorMessage] = useState('');
+ const navigate = useNavigate(); 
 
-  useEffect(() => {
-    let timer;
-    if (countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
+useEffect(() => {
+   // URL 파라미터 확인
+   const params = new URLSearchParams(location.search);
+   const email = params.get('email');
+   const name = params.get('name');
+   const googleId = params.get('googleId');
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
+   if (email && name && googleId) {
+     setIsGoogleUser(true);
+     setFormData(prev => ({
+       ...prev,
+       email,
+       name,
+       id: googleId,
+     }));
+   }
+ }, [location]);
 
-  const handleSSNChange = (e) => {
-    let value = e.target.value;
-    value = value.replace(/\D/g, ''); // 숫자 이외의 문자 제거
-    setFormData({ ...formData, ssn: value });
-  };
+ useEffect(() => {
+   let timer;
+   if (countdown > 0) {
+     timer = setInterval(() => {
+       setCountdown((prev) => prev - 1);
+     }, 1000);
+   }
+   return () => clearInterval(timer);
+ }, [countdown]);
 
-  const handlePhoneChange = (e) => {
-    let value = e.target.value;
-    value = value.replace(/\D/g, ''); // 숫자 이외의 문자 제거
+ const handleChange = (e) => {
+   const { name, value, type, checked } = e.target;
+   setFormData({
+     ...formData,
+     [name]: type === 'checkbox' ? checked : value,
+   });
+ };
 
-    if (value.length <= 3) {
-      setFormData({ ...formData, phoneNumber: value });
-    } else if (value.length <= 7) {
-      setFormData({ ...formData, phoneNumber: value.slice(0, 3) + '-' + value.slice(3) });
-    } else {
-      setFormData({
-        ...formData,
-        phoneNumber: value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11),
-      });
-    }
-  };
+ const handleSSNChange = (e) => {
+   let value = e.target.value;
+   value = value.replace(/\D/g, '');
+   setFormData({ ...formData, ssn: value });
+ };
 
-  const handleAgreeAllChange = (e) => {
-    const checked = e.target.checked;
-    setFormData({
-      ...formData,
-      agreeTerms: checked,
-      agreeService: checked,
-      agreePrivacy: checked,
-      agreeThirdParty: checked,
-      agreeFinancial: checked,
-    });
-  };
+ const handlePhoneChange = (e) => {
+   let value = e.target.value;
+   value = value.replace(/\D/g, '');
 
-  const validateInputs = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const birthDateRegex = /^\d{6}$/;
-    const ssnRegex = /^\d{7}$/;
-    const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
+   if (value.length <= 3) {
+     setFormData({ ...formData, phoneNumber: value });
+   } else if (value.length <= 7) {
+     setFormData({ ...formData, phoneNumber: value.slice(0, 3) + '-' + value.slice(3) });
+   } else {
+     setFormData({
+       ...formData,
+       phoneNumber: value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11),
+     });
+   }
+ };
 
-    if (!emailRegex.test(formData.email)) {
-      setErrorMessage('올바른 이메일 주소를 입력해 주세요.');
-      return false;
-    }
-    if (!birthDateRegex.test(formData.birthDate)) {
-      setErrorMessage('올바른 생년월일을 입력해 주세요. (예: 991225)');
-      return false;
-    }
-    if (!ssnRegex.test(formData.ssn)) {
-      setErrorMessage('올바른 주민등록번호 뒷자리를 입력해 주세요. (예: 1234567)');
-      return false;
-    }
-    if (!phoneRegex.test(formData.phoneNumber)) {
-      setErrorMessage('올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)');
-      return false;
-    }
-    setErrorMessage('');
-    return true;
-  };
+ const handleAgreeAllChange = (e) => {
+   const checked = e.target.checked;
+   setFormData({
+     ...formData,
+     agreeTerms: checked,
+     agreeService: checked,
+     agreePrivacy: checked,
+     agreeThirdParty: checked,
+     agreeFinancial: checked,
+   });
+ };
 
-  const sendVerificationCode = async () => {
-    if (!validateInputs()) return;
+ const validateInputs = () => {
+   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+   const birthDateRegex = /^\d{6}$/;
+   const ssnRegex = /^\d{7}$/;
+   const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
 
-    try {
-      const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentCode(generatedCode);
-      setCountdown(180); // 3분 타이머 시작
+   if (!emailRegex.test(formData.email)) {
+     setErrorMessage('올바른 이메일 주소를 입력해 주세요.');
+     return false;
+   }
+   if (!birthDateRegex.test(formData.birthDate)) {
+     setErrorMessage('올바른 생년월일을 입력해 주세요. (예: 991225)');
+     return false;
+   }
+   if (!ssnRegex.test(formData.ssn)) {
+     setErrorMessage('올바른 주민등록번호 뒷자리를 입력해 주세요. (예: 1234567)');
+     return false;
+   }
+   if (!phoneRegex.test(formData.phoneNumber)) {
+     setErrorMessage('올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)');
+     return false;
+   }
+   setErrorMessage('');
+   return true;
+ };
 
-      await axios.post('https://465e85cf-bf5d-4280-bdf1-978a53789d32.mock.pstmn.io/send-email', {
-        email: formData.email,
-        code: generatedCode,
-      });
+ const sendVerificationCode = async () => {
+   if (!validateInputs()) return;
 
-      console.log('인증번호 전송 완료:', generatedCode);
-      setErrorMessage('');
-    } catch (error) {
-      console.error('인증번호 전송 오류:', error);
-      setErrorMessage('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
-    }
-  };
+   try {
+     const response = await axios.post('http://localhost:8080/api/v1/email/verify/send', {
+       email: formData.email
+     });
 
-  const verifyCode = () => {
-    // if (verificationCode !== sentCode) {
-    //   setErrorMessage('인증번호가 일치하지 않습니다. 다시 확인해 주세요.');
-    //   return;
-    // }
-    // if (!formData.agreeTerms || !formData.agreeService || !formData.agreePrivacy || !formData.agreeThirdParty) {
-    //   setErrorMessage('인증 및 약관동의를 모두 완료해주세요.');
-    //   return;
-    // }
-    navigate('/signup/userinfo', { state: { ...formData } });
-  };
+     if (response.data.success) {
+       setCountdown(180);
+       setErrorMessage('');
+     } else {
+       setErrorMessage(response.data.message || '인증번호 전송에 실패했습니다.');
+     }
+   } catch (error) {
+     console.error('인증번호 전송 오류:', error);
+     setErrorMessage('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
+   }
+ };
 
-  const isVerificationButtonEnabled = formData.email.length > 0;
-  const isVerifyCodeButtonEnabled =
-    verificationCode.length > 0 &&
-    formData.agreeTerms &&
-    formData.agreeService &&
-    formData.agreePrivacy &&
-    formData.agreeThirdParty;
+ const verifyCode = async () => {
+   if (!formData.agreeTerms || !formData.agreeService || 
+       !formData.agreePrivacy || !formData.agreeThirdParty) {
+     setErrorMessage('인증 및 약관동의를 모두 완료해주세요.');
+     return;
+   }
+
+   try {
+     // 이메일 인증 코드 확인 (구글 로그인 사용자는 스킵)
+     if (!isGoogleUser) {
+       const verifyResponse = await axios.post('http://localhost:8080/api/v1/email/verify', null, {
+         params: { 
+           email: formData.email,
+           code: verificationCode
+         }
+       });
+
+       if (!verifyResponse.data.success) {
+         setErrorMessage('인증번호가 일치하지 않습니다.');
+         return;
+       }
+     }
+
+     // 회원가입 페이지로 이동
+     navigate('/signup/userinfo', { 
+       state: { 
+         ...formData,
+         isGoogleUser 
+       } 
+     });
+
+   } catch (error) {
+     console.error('인증 확인 오류:', error);
+     setErrorMessage('인증에 실패했습니다. 다시 시도해 주세요.');
+   }
+ };
+
+ // 이메일 인증 버튼 활성화 조건
+const isEmailVerificationEnabled = formData.email.length > 0;
+
+// 다음 버튼 활성화 조건 
+const isVerifyCodeButtonEnabled = isGoogleUser 
+ ? (formData.agreeTerms && 
+    formData.agreeService && 
+    formData.agreePrivacy && 
+    formData.agreeThirdParty)
+ : (verificationCode.length > 0 && 
+    formData.agreeTerms && 
+    formData.agreeService && 
+    formData.agreePrivacy && 
+    formData.agreeThirdParty);
 
   return (
-    <div style={styles.signupContainer}>
-      <h2 style={styles.title}>회원가입</h2>
+   <div style={styles.signupContainer}>
+     <h2 style={styles.title}>회원가입</h2>
 
-      <form style={styles.signupForm}>
-        <div style={styles.inputGroup}>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="이름"
-            style={styles.inputField}
-            required
-          />
-        </div>
+     <form style={styles.signupForm}>
+       <div style={styles.inputGroup}>
+         <input
+           type="text"
+           name="name"
+           value={formData.name}
+           onChange={handleChange}
+           placeholder="이름"
+           style={styles.inputField}
+           required
+           disabled={isGoogleUser}
+         />
+       </div>
 
         <div style={styles.inputGroupRow}>
           <input
@@ -206,40 +257,46 @@ function Signin() {
           />
         </div>
 
-        <div style={styles.inputGroup}>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="이메일 주소 (예: example@example.com)"
-            style={styles.inputField}
-            required
-          />
-          <button
-            type="button"
-            onClick={sendVerificationCode}
-            style={{
-              ...styles.verificationButton,
-              backgroundColor: isVerificationButtonEnabled ? '#1f8ef1' : '#c0c0c0',
-              cursor: isVerificationButtonEnabled ? 'pointer' : 'not-allowed',
-            }}
-            disabled={!isVerificationButtonEnabled}
-          >
-            인증번호 받기
-          </button>
-        </div>
+               {!isGoogleUser && (
+         <>
+           <div style={styles.inputGroup}>
+             <input
+               type="email"
+               name="email"
+               value={formData.email}
+               onChange={handleChange}
+               placeholder="이메일 주소"
+               style={styles.inputField}
+               required
+               disabled={isGoogleUser}
+             />
 
-        <div style={styles.inputGroup}>
-          <input
-            type="text"
-            value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
-            placeholder={`인증번호 입력 (${Math.floor(countdown / 60)}:${('0' + (countdown % 60)).slice(-2)})`}
-            style={styles.inputField}
-            required
-          />
-        </div>
+              <button
+              type="button"
+              onClick={sendVerificationCode}
+              style={{
+                ...styles.verificationButton,
+                backgroundColor: isEmailVerificationEnabled ? '#1f8ef1' : '#c0c0c0',
+                cursor: isEmailVerificationEnabled ? 'pointer' : 'not-allowed',
+              }}
+              disabled={!isEmailVerificationEnabled}
+              >
+              인증번호 받기
+              </button>
+           </div>
+
+           <div style={styles.inputGroup}>
+             <input
+               type="text"
+               value={verificationCode}
+               onChange={(e) => setVerificationCode(e.target.value)}
+               placeholder={`인증번호 입력 (${Math.floor(countdown / 60)}:${('0' + (countdown % 60)).slice(-2)})`}
+               style={styles.inputField}
+               required
+             />
+           </div>
+         </>
+       )}
 
         <div style={styles.checkboxGroup}>
           <label style={styles.checkboxLabel}>
@@ -291,20 +348,20 @@ function Signin() {
         </div>
       </form>
 
-      {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
-      <button
-        type="button"
-        onClick={verifyCode}
-        style={{
-          ...styles.verificationButton,
-          backgroundColor: isVerifyCodeButtonEnabled ? '#1f8ef1' : '#c0c0c0',
-          cursor: isVerifyCodeButtonEnabled ? 'pointer' : 'not-allowed',
-        }}
-        disabled={!isVerifyCodeButtonEnabled}
-      >
-        인증하기
-      </button>
-    </div>
+     {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
+     <button
+       type="button"
+       onClick={verifyCode}
+       style={{
+         ...styles.verificationButton,
+         backgroundColor: isVerifyCodeButtonEnabled ? '#1f8ef1' : '#c0c0c0',
+         cursor: isVerifyCodeButtonEnabled ? 'pointer' : 'not-allowed',
+       }}
+       disabled={!isVerifyCodeButtonEnabled}
+     >
+       다음
+     </button>
+   </div>
   );
 }
 
