@@ -4,6 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import skImage from '../../assets/sk.png';
 import samsungImage from '../../assets/samsung.png';
 import naverImage from '../../assets/naver.png';
+import bumyangImage from '../../assets/bumyang.png';
+import daedongImage from '../../assets/daedong.png';
+import kumhoImage from '../../assets/kumho.png';
+import bitnineImage from '../../assets/bitnine.png';
+import mgameImage from '../../assets/mgame.png';
+import rfmaterialsImage from '../../assets/rfmaterials.png';
 
 const GlobalStyle = createGlobalStyle`
  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -90,7 +96,7 @@ const Th = styled.th`
   color: #8b95a1;
   font-weight: 400;
   font-size: 13px;
-  vertical-align: middle; /* 가운데 정렬을 위한 추가 */
+  vertical-align: middle;
 `;
 
 const Td = styled.td`
@@ -99,14 +105,14 @@ const Td = styled.td`
   color: ${props => props.color || '#333'};
   text-align: ${props => props.align || 'left'};
   border-top: 1px solid #f2f2f2;
-  vertical-align: middle; /* 가운데 정렬을 위한 추가 */
+  vertical-align: middle;
 `;
 
 const RankNumber = styled.span`
-  color: #333;  /* 검정색으로 변경 */
+  color: #333;
   font-weight: 600;
-  display: block; /* 정렬을 위한 block 설정 */
-  text-align: center; /* 중앙 정렬 */
+  display: block;
+  text-align: center;
 `;
 
 const StockInfo = styled.div`
@@ -121,21 +127,20 @@ const StockInfo = styled.div`
   }
 
   img {
-    width: 24px;
-    height: 24px;
-    border-radius: 12px;
+    width: 36px;  /* 로고 크기 수정 */
+    height: 36px;  /* 로고 크기 수정 */
+    border-radius: 12px;  /* 로고 모서리 약간만 둥글게 */
   }
 `;
-
-function RealTimeChart() {
+const RealTimeChart = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeCategory, setActiveCategory] = useState('volume');
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -145,34 +150,74 @@ function RealTimeChart() {
     return `${hours}:${minutes}`;
   };
 
-  const stocks = [
-    { id: 'skhynix', rank: 1, name: 'SK하이닉스', image: skImage, price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '46,379주' },
-    { id: 'samsung', rank: 2, name: '삼성전자', image: samsungImage, price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '23,055주' },
-    { id: 'naver', rank: 3, name: '네이버', image: naverImage, price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '58,274주' }
-  ];
+  const volumeStocks = [
+    { id: 'skhynix', rank: 1, name: 'SK하이닉스', image: skImage, price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '1,546,379주' },
+    { id: 'samsung', rank: 2, name: '삼성전자', image: samsungImage, price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '1,223,055주' },
+    { id: 'naver', rank: 3, name: '네이버', image: naverImage, price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '858,274주' },
+ ];
+
+  const risingStocks = [
+    { id: 'kumho', rank: 1, name: '금호건설우', image: kumhoImage, price: 9710, change: 2240, changePercent: 29.9, volume: '1.5억원', shares: '15,416주' },
+    { id: 'bumyang', rank: 2, name: '범양건영', image: bumyangImage, price: 3165, change: 730, changePercent: 29.9, volume: '343억원', shares: '11,797,183주' },
+    { id: 'daedong', rank: 3, name: '대동기어', image: daedongImage, price: 10800, change: 2490, changePercent: 29.9, volume: '605억원', shares: '6,325,739주' },
+ ];
+
+  const fallingStocks = [
+    { id: 'bitnine', rank: 1, name: '비트나인', image: bitnineImage, price: 2730, change: -575, changePercent: -17.3, volume: '175억원', shares: '6,079,107주' },
+    { id: 'mgame', rank: 2, name: '엠게임', image: mgameImage, price: 5690, change: -1090, changePercent: -16.0, volume: '88억원', shares: '1,451,491주' },
+    { id: 'rfmaterials', rank: 3, name: 'RF머트리얼즈', image: rfmaterialsImage, price: 5380, change: -950, changePercent: -15.0, volume: '9.1억원', shares: '159,938주' },
+ ];
+
+  const getStocksForCategory = () => {
+    switch (activeCategory) {
+      case 'volume':
+        return volumeStocks;
+      case 'rising':
+        return risingStocks;
+      case 'falling':
+        return fallingStocks;
+      default:
+        return volumeStocks;
+    }
+  };
 
   const handleStockClick = (stock) => {
     navigate(`/stock/${stock.id}`, { state: { stock } });
   };
 
   return (
-      <Container>
-        <HeaderWrapper>
-          <TitleWrapper>
-            <Title>실시간 차트</Title>
-            <TimeStamp>오늘 {formatTime(currentTime)} 기준</TimeStamp>
-          </TitleWrapper>
-        </HeaderWrapper>
+    <Container>
+      <HeaderWrapper>
+        <TitleWrapper>
+          <Title>실시간 차트</Title>
+          <TimeStamp>오늘 {formatTime(currentTime)} 기준</TimeStamp>
+        </TitleWrapper>
+      </HeaderWrapper>
 
-        <ChartContainer>
-          <Categories>
-            <Category active>코코넛증권 거래량</Category>
-            <Category>급상승</Category>
-            <Category>급하락</Category>
-          </Categories>
+      <ChartContainer>
+        <Categories>
+          <Category 
+            active={activeCategory === 'volume'} 
+            onClick={() => setActiveCategory('volume')}
+          >
+            코코넛증권 거래량
+          </Category>
+          <Category 
+            active={activeCategory === 'rising'} 
+            onClick={() => setActiveCategory('rising')}
+          >
+            급상승
+          </Category>
+          <Category 
+            active={activeCategory === 'falling'} 
+            onClick={() => setActiveCategory('falling')}
+          >
+            급하락
+          </Category>
+        </Categories>
 
-          <Table>
-            <thead>
+        <Table>
+          <thead>
             <tr>
               <Th>순위</Th>
               <Th>종목</Th>
@@ -181,36 +226,36 @@ function RealTimeChart() {
               <Th align="right">거래대금</Th>
               <Th align="right">거래량</Th>
             </tr>
-            </thead>
-            <tbody>
-            {stocks.map((stock) => (
-                <tr key={stock.id}>
-                  <Td>
-                    <RankNumber>{stock.rank}</RankNumber>
-                  </Td>
-                  <Td>
-                    <StockInfo onClick={() => handleStockClick(stock)}>
-                      <img src={stock.image} alt={stock.name} />
-                      <span>{stock.name}</span>
-                    </StockInfo>
-                  </Td>
-                  <Td align="right">{stock.price.toLocaleString()}원</Td>
-                  <Td
-                      align="right"
-                      color={stock.change > 0 ? '#f45e47' : '#4174f6'}
-                  >
-                    {stock.change > 0 ? '+' : ''}{stock.change.toLocaleString()}원
-                    ({stock.change > 0 ? '+' : ''}{stock.changePercent}%)
-                  </Td>
-                  <Td align="right">{stock.volume}</Td>
-                  <Td align="right">{stock.shares}</Td>
-                </tr>
+          </thead>
+          <tbody>
+            {getStocksForCategory().map((stock) => (
+              <tr key={stock.id}>
+                <Td>
+                  <RankNumber>{stock.rank}</RankNumber>
+                </Td>
+                <Td>
+                  <StockInfo onClick={() => handleStockClick(stock)}>
+                    <img src={stock.image} alt={stock.name} />
+                    <span>{stock.name}</span>
+                  </StockInfo>
+                </Td>
+                <Td align="right">{stock.price.toLocaleString()}원</Td>
+                <Td 
+                  align="right"
+                  color={stock.change > 0 ? '#f45e47' : '#4174f6'}
+                >
+                  {stock.change > 0 ? '+' : ''}{stock.change.toLocaleString()}원
+                  ({stock.change > 0 ? '+' : ''}{stock.changePercent}%)
+                </Td>
+                <Td align="right">{stock.volume}</Td>
+                <Td align="right">{stock.shares}</Td>
+              </tr>
             ))}
-            </tbody>
-          </Table>
-        </ChartContainer>
-      </Container>
+          </tbody>
+        </Table>
+      </ChartContainer>
+    </Container>
   );
-}
+};
 
 export default RealTimeChart;

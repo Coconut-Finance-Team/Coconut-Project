@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import styled, { createGlobalStyle } from 'styled-components';
+import axios from 'axios';
 import koreaFlag from '../../assets/korea.png';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
-  
+
   * {
     font-family: 'Noto Sans KR', sans-serif;
   }
@@ -32,7 +32,7 @@ const MarketName = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   img {
     width: 24px;
     height: 16px;
@@ -54,7 +54,7 @@ const CurrentPrice = styled.div`
 
 const Change = styled.div`
   font-size: 16px;
-  color: ${props => (props.value < 0 ? '#4788ff' : '#ff4747')};
+  color: ${props => (props.value > 0 ? '#4788ff' : '#ff4747')};
 `;
 
 const TimeframeButtons = styled.div`
@@ -116,101 +116,6 @@ const PriceIndicator = styled.div`
   pointer-events: none;
 `;
 
-const generateChartData = (basePrice, days, isKospi) => {
-  const data = [];
-  let currentPrice = basePrice;
-  const now = new Date();
-  
-  // 기간별 데이터 포인트 및 변동성 설정
-  const getTimeConfig = () => {
-    if (days === 1) {
-      return { 
-        pointsPerDay: 72,  // 5분 간격
-        volatility: 0.0002,
-        interval: 1000 * 60 * 5
-      };
-    } else if (days <= 7) {
-      return { 
-        pointsPerDay: 24,  // 1시간 간격
-        volatility: 0.001,
-        interval: 1000 * 60 * 60
-      };
-    } else if (days <= 30) {
-      return { 
-        pointsPerDay: 4,   // 6시간 간격
-        volatility: 0.002,
-        interval: 1000 * 60 * 60 * 6
-      };
-    } else if (days <= 365) {
-      return { 
-        pointsPerDay: 1,   // 1일 간격
-        volatility: 0.003,
-        interval: 1000 * 60 * 60 * 24
-      };
-    } else {
-      return { 
-        pointsPerDay: 1/7, // 1주 간격
-        volatility: 0.004,
-        interval: 1000 * 60 * 60 * 24 * 7
-      };
-    }
-  };
-
-  const { pointsPerDay, volatility, interval } = getTimeConfig();
-  const totalPoints = Math.floor(days * pointsPerDay);
-  
-  // 전체적인 추세 설정 (상승/하락)
-  const trend = Math.random() * 2 - 1; // -1에서 1 사이의 값
-  
-  // 시간대별 추세 생성 (더 자연스러운 움직임을 위해)
-  const trendPoints = Array.from({ length: Math.ceil(totalPoints / 10) }, () => 
-    Math.random() * 2 - 1 + trend
-  );
-  
-  for (let i = 0; i < totalPoints; i++) {
-    const date = new Date(now - ((totalPoints - i) * interval));
-    
-    // 현재 구간의 추세 반영
-    const trendIndex = Math.floor(i / 10);
-    const currentTrend = trendPoints[trendIndex] || trend;
-    
-    // 변동성에 추세 반영
-    const trendComponent = currentTrend * volatility * 0.5;
-    const randomComponent = (Math.random() - 0.5) * volatility;
-    currentPrice = currentPrice * (1 + trendComponent + randomComponent);
-
-    // 시간 포맷팅
-    let timeLabel;
-    if (days === 1) {
-      timeLabel = date.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-    } else if (days <= 7) {
-      timeLabel = `${date.toLocaleDateString('ko-KR', {
-        weekday: 'short'
-      })} ${date.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })}`;
-    } else {
-      timeLabel = date.toLocaleDateString('ko-KR', {
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-
-    data.push({
-      time: timeLabel,
-      value: Math.round(currentPrice * 100) / 100
-    });
-  }
-
-  return data;
-};
-
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -228,76 +133,97 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-function ChartDetail() {
-  const location = useLocation();
+function KospiChart() {
   const [hoveredPrice, setHoveredPrice] = useState(null);
   const [hoveredY, setHoveredY] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const [timeframe, setTimeframe] = useState('1일');
+  const [previousValue, setPreviousValue] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [marketData, setMarketData] = useState({
+    value: 0,
+    change: 0,
+    changePercent: 0
+  });
 
-  const marketData = location?.state?.marketData || {
-    name: '코스피',
-    value: 2501.33,
-    change: -30.33,
-    changePercent: -1.1,
-    isKospi: true
+  // 초기 데이터 로드
+  const fetchDailyData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/market/daily');
+      const data = response.data.kospi;
+      if (data.length > 0) {
+        const formattedData = data.map(item => ({
+          time: item.time.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
+          value: item.value
+        }));
+        
+        setChartData(formattedData);
+        const lastValue = data[data.length - 1].value;
+        const firstValue = data[0].value;
+        
+        setMarketData({
+          value: lastValue,
+          change: lastValue - firstValue,
+          changePercent: ((lastValue - firstValue) / firstValue) * 100
+        });
+        
+        setPreviousValue(lastValue);
+        setLastUpdate(lastValue);
+      }
+    } catch (error) {
+      console.error('Error fetching daily data:', error);
+    }
+  };
+
+  // 실시간 데이터 업데이트
+  const fetchRealtimeData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/market/realtime');
+      const data = response.data;
+      const marketInfo = JSON.parse(data.kospi[0]);
+      const currentValue = parseFloat(marketInfo.currentIndex);
+
+      if (previousValue === null) {
+        setPreviousValue(currentValue);
+      } else {
+        const firstValue = chartData[0]?.value || currentValue;
+        const change = currentValue - firstValue;
+        const changePercent = (change / firstValue) * 100;
+
+        setMarketData({
+          value: currentValue,
+          change,
+          changePercent
+        });
+      }
+
+      setPreviousValue(currentValue);
+      const time = marketInfo.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3');
+
+      setChartData(prevData => {
+        const newData = [...prevData, {
+          time,
+          value: currentValue,
+          color: lastUpdate !== null ? (currentValue > lastUpdate ? '#4788ff' : '#ff4747') : '#ff4747'
+        }];
+
+        setLastUpdate(currentValue);
+        return newData;
+      });
+
+    } catch (error) {
+      console.error('Error fetching realtime data:', error);
+    }
   };
 
   useEffect(() => {
-    // 초기 데이터 설정
-    const initialData = generateChartData(
-      marketData.value,
-      timeframe === '1일' ? 1 :
-      timeframe === '1주일' ? 7 :
-      timeframe === '1개월' ? 30 :
-      timeframe === '5년' ? 1825 : 365,
-      marketData.isKospi
-    );
-    setChartData(initialData);
-
-    // 1일 차트일 때만 실시간 업데이트
-    if (timeframe === '1일') {
-      const interval = setInterval(() => {
-        setChartData(prevData => {
-          const newData = [...prevData];
-          const lastValue = newData[newData.length - 1].value;
-          const now = new Date();
-          
-          // 새로운 데이터 포인트 추가
-          const volatility = 0.0002;
-          const newValue = lastValue * (1 + (Math.random() - 0.5) * volatility);
-          
-          newData.push({
-            time: now.toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            }),
-            value: Math.round(newValue * 100) / 100
-          });
-          
-          // 72개 포인트 유지
-          if (newData.length > 72) {
-            newData.shift();
-          }
-          
-          return newData;
-        });
-      }, 5000); // 5초마다 업데이트
-
-      return () => clearInterval(interval);
-    }
-  }, [timeframe, marketData.value, marketData.isKospi]);
-
-  const handleTimeframeChange = (newTimeframe) => {
-    setTimeframe(newTimeframe);
-    const days = newTimeframe === '1일' ? 1 :
-                newTimeframe === '1주일' ? 7 :
-                newTimeframe === '1개월' ? 30 :
-                newTimeframe === '5년' ? 1825 : 365;
-    const newData = generateChartData(marketData.value, days, marketData.isKospi);
-    setChartData(newData);
-  };
+    // 초기 데이터 로드
+    fetchDailyData();
+    
+    // 실시간 업데이트 시작
+    const interval = setInterval(fetchRealtimeData, 3000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleMouseMove = (props) => {
     if (props && props.activePayload) {
@@ -318,7 +244,7 @@ function ChartDetail() {
         <Header>
           <div>
             <MarketName>
-              {marketData.name}
+              코스피
               <img src={koreaFlag} alt="Korea Flag" />
             </MarketName>
             <PriceInfo>
@@ -326,7 +252,8 @@ function ChartDetail() {
                 {marketData.value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
               </CurrentPrice>
               <Change value={marketData.change}>
-                {marketData.change > 0 ? '+' : ''}{marketData.change.toFixed(2)}
+                {marketData.change > 0 ? '+' : ''}
+                {marketData.change.toFixed(2)}
                 ({marketData.changePercent.toFixed(2)}%)
               </Change>
             </PriceInfo>
@@ -334,15 +261,9 @@ function ChartDetail() {
         </Header>
 
         <TimeframeButtons>
-          {['1일', '1주일', '1개월', '1년', '5년'].map((period) => (
-            <TimeButton
-              key={period}
-              active={timeframe === period}
-              onClick={() => handleTimeframeChange(period)}
-            >
-              {period}
-            </TimeButton>
-          ))}
+          <TimeButton active={true}>
+            실시간
+          </TimeButton>
         </TimeframeButtons>
 
         <ChartContainer>
@@ -389,7 +310,7 @@ function ChartDetail() {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#ff4747"
+                stroke={marketData.change > 0 ? '#4788ff' : '#ff4747'}
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}
@@ -410,4 +331,4 @@ function ChartDetail() {
   );
 }
 
-export default ChartDetail;
+export default KospiChart;

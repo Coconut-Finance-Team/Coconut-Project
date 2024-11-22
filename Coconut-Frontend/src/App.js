@@ -17,7 +17,8 @@ import SigninAddInfo from './components/auth/SigninAddInfo';
 import FindIdPassword from './components/auth/FindIdPassword';
 import RealTimeChart from './components/home/RealTimeChart';
 import StockDetail from './components/home/StockDetail';
-import ChartDetail from './components/home/ChartDetail';
+import KospiChart from './components/home/KospiChart';
+import KosdaqChart from './components/home/KosdaqChart';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
 
@@ -36,56 +37,46 @@ function App() {
 
   if (isAdminPath) {
     return (
-        <>
-          <GlobalStyle />
-          <Routes>
-            <Route path="/admin/*" element={<AdminPage />} />
-          </Routes>
-        </>
+      <>
+        <GlobalStyle />
+        <Routes>
+          <Route path="/admin/*" element={<AdminPage />} />
+        </Routes>
+      </>
     );
   }
 
   return (
-      <>
-        <GlobalStyle />
-        <div>
-          <Header user={user} setUser={setUser} />
-          <main>
-            <Routes>
-              <Route path="/" element={<Homeboard />} />
-              <Route path="/account/*" element={<Account />} />
-              <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
-              <Route path="/subscription/*" element={<Subscription />} />
-              <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
-              <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
-              <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
-              <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
-              <Route path="/login" element={<Login setUser={setUser} />} />
-              <Route path="/signin" element={<Signin />} />
-              <Route path="/signup/userinfo" element={<SigninUserInfo />} />
-              <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
-              <Route path="/findidpassword" element={<FindIdPassword />} />
-              <Route path="/chart" element={<RealTimeChart />} />
-              <Route path="/stock/:stockId" element={<StockDetail />} />
-              <Route path="/chart/detail" element={<ChartDetail />} />
-              <Route path="/search" element={<SearchPage />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </>
+    <>
+      <GlobalStyle />
+      <div>
+        <Header user={user} setUser={setUser} />
+        <main>
+          <Routes>
+            <Route path="/" element={<Homeboard />} />
+            <Route path="/account/*" element={<Account />} />
+            <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
+            <Route path="/subscription/*" element={<Subscription />} />
+            <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
+            <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
+            <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+            <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+            <Route path="/login" element={<Login setUser={setUser} />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/signup/userinfo" element={<SigninUserInfo />} />
+            <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
+            <Route path="/findidpassword" element={<FindIdPassword />} />
+            <Route path="/chart" element={<RealTimeChart />} />
+            <Route path="/stock/:stockId" element={<StockDetail />} />
+            <Route path="/chart/kospi" element={<KospiChart />} />
+            <Route path="/chart/kosdaq" element={<KosdaqChart />} />
+            <Route path="/search" element={<SearchPage />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }
-
-const AppContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background-color: #ffffff;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-`;
 
 export default App;
