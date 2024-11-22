@@ -21,6 +21,7 @@ import KospiChart from './components/home/KospiChart';
 import KosdaqChart from './components/home/KosdaqChart';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
+import MyPage from './components/mypage';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/chart/kospi" element={<KospiChart />} />
             <Route path="/chart/kosdaq" element={<KosdaqChart />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/mypage" element={<MyPage user={user} />} />
           </Routes>
         </main>
         <Footer />

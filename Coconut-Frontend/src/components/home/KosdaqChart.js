@@ -132,7 +132,7 @@ function KosdaqChart() {
     let ws = null;
   
     const connectWebSocket = () => {
-      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
+      ws = new WebSocket('ws://localhost:8080/ws/stock/1001');
       
       ws.onopen = () => {
         console.log('WebSocket Connected');
