@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
-import axios from 'axios';
 import koreaFlag from '../../assets/korea.png';
 
 const ChartContainer = styled.div`
@@ -76,58 +75,81 @@ const IndexChart = ({ name, isKospi = true }) => {
     changePercent: 0
   });
   const [chartData, setChartData] = useState([]);
-  const [previousValue, setPreviousValue] = useState(null);
-
-  const fetchRealtimeData = async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/api/market/realtime');
-      const data = response.data;
-      const marketInfo = JSON.parse(isKospi ? data.kospi[0] : data.kosdaq[0]);
-      const currentValue = parseFloat(marketInfo.currentIndex);
-
-      if (previousValue === null) {
-        setPreviousValue(currentValue);
-        setMarketData({
-          value: currentValue,
-          change: 0,
-          changePercent: 0
-        });
-      } else {
-        const change = currentValue - previousValue;
-        const changePercent = (change / previousValue) * 100;
-
-        setMarketData({
-          value: currentValue,
-          change: change,
-          changePercent: changePercent
-        });
-      }
-
-      setPreviousValue(currentValue);
-      
-      const time = marketInfo.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3');
-      
-      setChartData(prevData => {
-        const newData = [...prevData, {
-          time,
-          value: currentValue
-        }];
-
-        if (newData.length > 30) {
-          return newData.slice(-30);
-        }
-        return newData;
-      });
-    } catch (error) {
-      console.error('Error fetching realtime data:', error);
-    }
-  };
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const firstValueRef = useRef(null);
 
   useEffect(() => {
-    fetchRealtimeData();
-    const interval = setInterval(fetchRealtimeData, 3000);
+    let ws = null;
+  
+    const connectWebSocket = () => {
+      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
+      
+      ws.onopen = () => {
+        console.log('WebSocket Connected');
+      };
+  
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const marketDataArray = isKospi ? data.kospi : data.kosdaq;
+          
+          if (marketDataArray && marketDataArray.length > 0) {
+            const parsedData = marketDataArray.map(item => {
+              const parsed = JSON.parse(item);
+              return {
+                time: parsed.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
+                value: parseFloat(parsed.currentIndex)
+              };
+            });
 
-    return () => clearInterval(interval);
+            parsedData.sort((a, b) => a.time.localeCompare(b.time));
+
+            // 최근 30개 데이터만 유지
+            const recentData = parsedData.slice(-30);
+            setChartData(recentData);
+
+            if (parsedData.length > 0) {
+              const currentValue = parsedData[parsedData.length - 1].value;
+
+              if (firstValueRef.current === null) {
+                firstValueRef.current = currentValue;
+              }
+
+              const change = currentValue - firstValueRef.current;
+              const changePercent = (change / firstValueRef.current) * 100;
+
+              setMarketData({
+                value: currentValue,
+                change,
+                changePercent
+              });
+
+              setLastUpdate(currentValue);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket data:', error);
+        }
+      };
+  
+      ws.onclose = (event) => {
+        console.log('WebSocket Disconnected:', event.code, event.reason);
+        setTimeout(connectWebSocket, 3000);
+      };
+  
+      ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+      };
+    };
+  
+    connectWebSocket();
+  
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      firstValueRef.current = null;
+    };
   }, [isKospi]);
 
   const handleClick = () => {
@@ -159,7 +181,7 @@ const IndexChart = ({ name, isKospi = true }) => {
             <Line
               type="monotone"
               dataKey="value"
-              stroke={marketData.change > 0 ? '#ff4747' : '#4788ff'}
+              stroke="#ff4747"
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}

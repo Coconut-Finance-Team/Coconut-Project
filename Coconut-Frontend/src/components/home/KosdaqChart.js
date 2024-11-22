@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import styled, { createGlobalStyle } from 'styled-components';
-import axios from 'axios';
-import koreaFlag from '../../assets/korea.png';
-
-const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
-
-  * {
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-`;
+import styled from 'styled-components';
 
 const Container = styled.div`
   padding: 40px;
@@ -32,12 +22,6 @@ const MarketName = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-
-  img {
-    width: 24px;
-    height: 16px;
-    margin-top: 4px;
-  }
 `;
 
 const PriceInfo = styled.div`
@@ -137,13 +121,81 @@ function KosdaqChart() {
   const [hoveredPrice, setHoveredPrice] = useState(null);
   const [hoveredY, setHoveredY] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const [previousValue, setPreviousValue] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [marketData, setMarketData] = useState({
     value: 0,
     change: 0,
     changePercent: 0
   });
+
+  useEffect(() => {
+    let ws = null;
+  
+    const connectWebSocket = () => {
+      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
+      
+      ws.onopen = () => {
+        console.log('WebSocket Connected');
+      };
+  
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // KOSDAQ 데이터 처리
+          if (data.kosdaq && data.kosdaq.length > 0) {
+            const parsedData = data.kosdaq.map(item => {
+              const parsed = JSON.parse(item);
+              return {
+                time: parsed.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
+                value: parseFloat(parsed.currentIndex)
+              };
+            });
+
+            parsedData.sort((a, b) => {
+              return a.time.localeCompare(b.time);
+            });
+
+            setChartData(parsedData);
+
+            if (parsedData.length > 0) {
+              const firstValue = parsedData[0].value;
+              const currentValue = parsedData[parsedData.length - 1].value;
+              const change = currentValue - firstValue;
+              const changePercent = (change / firstValue) * 100;
+
+              setMarketData({
+                value: currentValue,
+                change,
+                changePercent
+              });
+
+              setLastUpdate(currentValue);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket data:', error);
+        }
+      };
+  
+      ws.onclose = (event) => {
+        console.log('WebSocket Disconnected:', event.code, event.reason);
+        setTimeout(connectWebSocket, 3000);
+      };
+  
+      ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+      };
+    };
+  
+    connectWebSocket();
+  
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, []);
 
   const handleMouseMove = (props) => {
     if (props && props.activePayload) {
@@ -157,190 +209,93 @@ function KosdaqChart() {
     setHoveredY(null);
   };
 
-  const fetchDailyData = async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/api/market/history');
-      const data = response.data.kosdaq;
-      if (data.length > 0) {
-        const formattedData = data.map(item => ({
-          time: item.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
-          value: item.currentIndex,
-          color: lastUpdate !== null ? (item.currentIndex > lastUpdate ? '#4788ff' : '#ff4747') : '#ff4747'
-        }));
-        
-        setChartData(formattedData);
-        const lastValue = data[data.length - 1].currentIndex;
-        const firstValue = data[0].currentIndex;
-        
-        setPreviousValue(lastValue);
-        setLastUpdate(lastValue);
-        setMarketData({
-          value: lastValue,
-          change: lastValue - firstValue,
-          changePercent: ((lastValue - firstValue) / firstValue) * 100
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching daily data:', error);
-    }
-  };
-
-  const fetchRealtimeData = async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/api/market/realtime');
-      const marketInfo = response.data.kosdaq;
-      if (!marketInfo) return;
-
-      const currentValue = parseFloat(marketInfo.currentIndex);
-      const time = marketInfo.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3');
-
-      if (chartData.length === 0) {
-        setPreviousValue(currentValue);
-        setMarketData({
-          value: currentValue,
-          change: 0,
-          changePercent: 0
-        });
-      } else {
-        const firstValue = chartData[0].value;
-        const change = currentValue - firstValue;
-        const changePercent = (change / firstValue) * 100;
-
-        setMarketData({
-          value: currentValue,
-          change,
-          changePercent
-        });
-      }
-
-      setPreviousValue(currentValue);
-
-      setChartData(prevData => {
-        const existingIndex = prevData.findIndex(item => item.time === time);
-        let newData;
-
-        if (existingIndex !== -1) {
-          newData = [...prevData];
-          newData[existingIndex] = {
-            time,
-            value: currentValue,
-            color: lastUpdate !== null ? (currentValue > lastUpdate ? '#4788ff' : '#ff4747') : '#ff4747'
-          };
-        } else {
-          newData = [...prevData, {
-            time,
-            value: currentValue,
-            color: lastUpdate !== null ? (currentValue > lastUpdate ? '#4788ff' : '#ff4747') : '#ff4747'
-          }];
-        }
-
-        setLastUpdate(currentValue);
-        return newData;
-      });
-
-    } catch (error) {
-      console.error('Error fetching realtime data:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchDailyData();
-    const interval = setInterval(fetchRealtimeData, 3000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <>
-      <GlobalStyle />
-      <Container>
-        <Header>
-          <div>
-            <MarketName>
-              코스닥
-              <img src={koreaFlag} alt="Korea Flag" />
-            </MarketName>
-            <PriceInfo>
-              <CurrentPrice>
-                {marketData.value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
-              </CurrentPrice>
-              <Change value={marketData.change}>
-                {marketData.change > 0 ? '+' : ''}
-                {marketData.change.toFixed(2)}
-                ({marketData.changePercent.toFixed(2)}%)
-              </Change>
-            </PriceInfo>
-          </div>
-        </Header>
+    <Container>
+      <Header>
+        <div>
+          <MarketName>
+            코스닥
+          </MarketName>
+          <PriceInfo>
+            <CurrentPrice>
+              {marketData.value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
+            </CurrentPrice>
+            <Change value={lastUpdate !== null ? (marketData.value > lastUpdate) : false}>
+              {marketData.change > 0 ? '+' : ''}
+              {marketData.change.toFixed(2)}
+              ({marketData.changePercent.toFixed(2)}%)
+            </Change>
+          </PriceInfo>
+        </div>
+      </Header>
 
-        <TimeframeButtons>
-          <TimeButton active={true}>
-            실시간
-          </TimeButton>
-        </TimeframeButtons>
+      <TimeframeButtons>
+        <TimeButton active={true}>
+          실시간
+        </TimeButton>
+      </TimeframeButtons>
 
-        <ChartContainer>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chartData}
-              margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="rgba(240, 240, 240, 0.8)" 
-                vertical={true}
-                horizontalPoints={[]}
-                verticalPoints={[]}
-                opacity={0.5}
-              />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                interval={Math.floor(chartData.length / 6)}
-                axisLine={false}
-                tickLine={false}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                orientation="right"
-                axisLine={false}
-                tickLine={false}
-                width={60}
-                padding={{ top: 30, bottom: 30 }}
-              />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{
-                  stroke: '#666',
-                  strokeDasharray: '5 5',
-                  strokeWidth: 1
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={marketData.change > 0 ? '#4788ff' : '#ff4747'}
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-          {hoveredPrice && hoveredY && (
-            <PriceIndicator style={{ top: hoveredY }}>
-              {hoveredPrice.toLocaleString('ko-KR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </PriceIndicator>
-          )}
-        </ChartContainer>
-      </Container>
-    </>
+      <ChartContainer>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(240, 240, 240, 0.8)" 
+              vertical={true}
+              horizontalPoints={[]}
+              verticalPoints={[]}
+              opacity={0.5}
+            />
+            <XAxis 
+              dataKey="time" 
+              tick={{ fontSize: 12, fill: '#8B95A1' }}
+              interval={Math.floor(chartData.length / 6)}
+              axisLine={false}
+              tickLine={false}
+              padding={{ left: 10, right: 10 }}
+            />
+            <YAxis 
+              domain={['auto', 'auto']}
+              tick={{ fontSize: 12, fill: '#8B95A1' }}
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              width={60}
+              padding={{ top: 30, bottom: 30 }}
+            />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{
+                stroke: '#666',
+                strokeDasharray: '5 5',
+                strokeWidth: 1
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#ff4747"
+              strokeWidth={1.5}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+        {hoveredPrice && hoveredY && (
+          <PriceIndicator style={{ top: hoveredY }}>
+            {hoveredPrice.toLocaleString('ko-KR', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}
+          </PriceIndicator>
+        )}
+      </ChartContainer>
+    </Container>
   );
 }
 

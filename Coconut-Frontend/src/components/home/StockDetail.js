@@ -506,7 +506,7 @@ function StockDetail() {
                 </Tags>
 
                 <ChartContainer>
-                  <StockChart data={mockChartData} />
+                  <StockChart stockId={stockId} />
                 </ChartContainer>
 
                 {/* 호가 정보 */}
