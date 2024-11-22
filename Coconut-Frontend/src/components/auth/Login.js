@@ -155,7 +155,7 @@ function Login({ setUser }) {
         // JWT 토큰 저장 및 리디렉션 처리
         localStorage.setItem('jwtToken', data.token);
         alert('로그인 성공!');
-        navigate('/dashboard'); // 로그인 후 이동할 페이지
+        navigate('/'); // 로그인 후 이동할 페이지
       } else {
         const errorData = await response.json();
         console.error('로그인 실패:', errorData);
@@ -167,10 +167,14 @@ function Login({ setUser }) {
     }
   };
 
-  const handleGoogleLogin = () => {
+const handleGoogleLogin = async () => {
+  try {
     const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
     window.location.href = springBootAuthUrl;
-  };
+  } catch (error) {
+    console.error("Google 로그인 중 오류 발생:", error);
+  }
+};
 
   const handleSignupClick = () => {
     navigate('/signin');
