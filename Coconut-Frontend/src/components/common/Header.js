@@ -1,5 +1,4 @@
-// Header.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import logo from '../../assets/logo.png';
@@ -46,10 +45,10 @@ const Nav = styled.nav`
 `;
 
 const NavItem = styled(Link)`
-  color: ${props => props.isActive ? '#333' : '#8b95a1'};
+  color: ${props => props.$isActive ? '#333' : '#8b95a1'};
   text-decoration: none;
   font-size: 17px;
-  font-weight: ${props => props.isActive ? '600' : '400'};
+  font-weight: ${props => props.$isActive ? '600' : '400'};
   padding: 8px 0;
   position: relative;
 
@@ -60,7 +59,7 @@ const NavItem = styled(Link)`
     left: 0;
     width: 100%;
     height: 2px;
-    background: ${props => props.isActive ? '#333' : 'transparent'};
+    background: ${props => props.$isActive ? '#333' : 'transparent'};
   }
 `;
 
@@ -147,9 +146,48 @@ const LogoutButton = styled.button`
 `;
 
 function Header({ user, setUser }) {
+  console.log('Header의 user 값:', user);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const checkAndFetchUserInfo = async () => {
+      const token = localStorage.getItem('jwtToken');
+      console.log('저장된 토큰:', token);
+  
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:8080/api/v1/users/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+  
+          console.log('응답 상태:', response.status);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('받아온 사용자 정보:', data);
+            setUser(data);
+          } else {
+            console.error('사용자 정보 가져오기 실패');
+            localStorage.removeItem('jwtToken');
+            setUser(null);
+          }
+        } catch (error) {
+          console.error('API 호출 에러:', error);
+          localStorage.removeItem('jwtToken');
+          setUser(null);
+        }
+      } else {
+        console.log('토큰이 없습니다');
+      }
+    };
+  
+    checkAndFetchUserInfo();
+  }, [setUser]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -163,8 +201,7 @@ function Header({ user, setUser }) {
   };
 
   const handleLogoutClick = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('jwtToken');
     setUser(null);
     navigate('/');
   };
@@ -178,13 +215,13 @@ function Header({ user, setUser }) {
         </LogoContainer>
         
         <Nav>
-          <NavItem to="/" isActive={location.pathname === '/'}>
+          <NavItem to="/" $isActive={location.pathname === '/'}>
             홈
           </NavItem>
-          <NavItem to="/subscription" isActive={location.pathname.includes('subscription')}>
+          <NavItem to="/subscription" $isActive={location.pathname.includes('subscription')}>
             공모주 청약
           </NavItem>
-          <NavItem to="/account" isActive={location.pathname.includes('account')}>
+          <NavItem to="/account" $isActive={location.pathname.includes('account')}>
             내 계좌
           </NavItem>
         </Nav>
@@ -207,7 +244,7 @@ function Header({ user, setUser }) {
         </SearchBox>
         {user ? (
           <>
-            <WelcomeMessage to="/account">{user.username}님 반갑습니다!</WelcomeMessage>
+            <WelcomeMessage to="/mypage">{user.username}님 반갑습니다!</WelcomeMessage>
             <LogoutButton onClick={handleLogoutClick}>로그아웃</LogoutButton>
           </>
         ) : (

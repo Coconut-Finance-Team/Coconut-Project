@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import React, { useState, useEffect, useRef } from 'react';
+import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import koreaFlag from '../../assets/korea.png';
-
-const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
-  * {
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-`;
 
 const ChartContainer = styled.div`
   background: #ffffff;
@@ -64,7 +57,7 @@ const Price = styled.div`
 
 const Change = styled.div`
   font-size: 14px;
-  color: ${props => (props.value < 0 ? '#4788ff' : '#ff4747')};
+  color: ${props => (props.value > 0 ? '#ff4747' : '#4788ff')};
   margin-top: 4px;
 `;
 
@@ -74,48 +67,94 @@ const ChartSection = styled.div`
   position: relative;
 `;
 
-const ChartWrapper = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-`;
-
-const IndexChart = ({ name, value, change, changePercent }) => {
+const IndexChart = ({ name, isKospi = true }) => {
   const navigate = useNavigate();
-  const [mounted, setMounted] = useState(false);
+  const [marketData, setMarketData] = useState({
+    value: 0,
+    change: 0,
+    changePercent: 0
+  });
+  const [chartData, setChartData] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const firstValueRef = useRef(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    let ws = null;
+  
+    const connectWebSocket = () => {
+      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
+      
+      ws.onopen = () => {
+        console.log('WebSocket Connected');
+      };
+  
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const marketDataArray = isKospi ? data.kospi : data.kosdaq;
+          
+          if (marketDataArray && marketDataArray.length > 0) {
+            const parsedData = marketDataArray.map(item => {
+              const parsed = JSON.parse(item);
+              return {
+                time: parsed.marketTime.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3'),
+                value: parseFloat(parsed.currentIndex)
+              };
+            });
 
-  const generateSmoothData = (range = 30, baseValue = value, fluctuation = 0.01) => {
-    const data = [];
-    for (let i = 0; i < range; i++) {
-      baseValue *= 1 + (Math.random() * fluctuation - fluctuation / 2);
-      data.push({
-        time: i,
-        value: Math.round(baseValue * 100) / 100, // 소수점 2자리로 고정
-      });
-    }
-    return data;
-  };
+            parsedData.sort((a, b) => a.time.localeCompare(b.time));
+
+            // 최근 30개 데이터만 유지
+            const recentData = parsedData.slice(-30);
+            setChartData(recentData);
+
+            if (parsedData.length > 0) {
+              const currentValue = parsedData[parsedData.length - 1].value;
+
+              if (firstValueRef.current === null) {
+                firstValueRef.current = currentValue;
+              }
+
+              const change = currentValue - firstValueRef.current;
+              const changePercent = (change / firstValueRef.current) * 100;
+
+              setMarketData({
+                value: currentValue,
+                change,
+                changePercent
+              });
+
+              setLastUpdate(currentValue);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket data:', error);
+        }
+      };
+  
+      ws.onclose = (event) => {
+        console.log('WebSocket Disconnected:', event.code, event.reason);
+        setTimeout(connectWebSocket, 3000);
+      };
+  
+      ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+      };
+    };
+  
+    connectWebSocket();
+  
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      firstValueRef.current = null;
+    };
+  }, [isKospi]);
 
   const handleClick = () => {
-    navigate('/chart/detail', {
-      state: {
-        marketData: {
-          name,
-          value,
-          change,
-          changePercent,
-        },
-      },
-    });
+    navigate(isKospi ? '/chart/kospi' : '/chart/kosdaq');
   };
-
-  const chartData = generateSmoothData();
 
   return (
     <ChartContainer onClick={handleClick}>
@@ -126,30 +165,29 @@ const IndexChart = ({ name, value, change, changePercent }) => {
             <FlagImage src={koreaFlag} alt="Korea Flag" />
           </MarketName>
         </MarketHeader>
-        <Price>{value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</Price>
-        <Change value={change}>
-          {change >= 0 ? '+' : ''}
-          {change.toFixed(2)} ({changePercent.toFixed(2)}%)
+        <Price>
+          {marketData.value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
+        </Price>
+        <Change value={marketData.change}>
+          {marketData.change > 0 ? '+' : ''}
+          {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
         </Change>
       </InfoSection>
 
       <ChartSection>
-        <ChartWrapper>
-          {mounted && (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 12, right: 0, bottom: 12, left: 0 }}>
-                <YAxis domain={['dataMin', 'dataMax']} hide={true} />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={change < 0 ? '#4788ff' : '#ff4747'}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </ChartWrapper>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 12, right: 0, bottom: 12, left: 0 }}>
+            <YAxis domain={['auto', 'auto']} hide />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#ff4747"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </ChartSection>
     </ChartContainer>
   );
