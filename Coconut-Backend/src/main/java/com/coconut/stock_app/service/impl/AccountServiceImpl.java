@@ -2,17 +2,21 @@ package com.coconut.stock_app.service.impl;
 
 import com.coconut.stock_app.dto.account.AccountCreationRequest;
 import com.coconut.stock_app.dto.account.AccountCreationResponse;
-import com.coconut.stock_app.entity.cloud.IPO;
+import com.coconut.stock_app.entity.cloud.StockChart;
 import com.coconut.stock_app.entity.on_premise.Account;
 import com.coconut.stock_app.entity.on_premise.AccountStatus;
 import com.coconut.stock_app.entity.on_premise.User;
+import com.coconut.stock_app.repository.cloud.StockChartRepository;
+import com.coconut.stock_app.entity.cloud.IPO;
 import com.coconut.stock_app.repository.cloud.IPORepository;
 import com.coconut.stock_app.repository.on_premise.AccountRepository;
 import com.coconut.stock_app.service.AccountService;
 import com.coconut.stock_app.service.UserService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.RandomStringUtils;
 import com.coconut.stock_app.dto.account.*;
@@ -42,6 +46,8 @@ public class AccountServiceImpl implements AccountService {
     private final OwnedIPORepository ownedIPORepository;
     private final IPORepository ipoRepository;
     private final UserRepository userRepository;
+    private final OwnedStockRepository ownedStockRepository;
+    private final StockChartRepository stockChartRepository;
 
     @Override
     public AccountCreationResponse createAccount(AccountCreationRequest request) {
@@ -187,6 +193,37 @@ public class AccountServiceImpl implements AccountService {
         return accountDTO;
     }
 
+    public List<InvestmentDTO> getInvestment(String uuid) {
+        List<OwnedStock> ownedStocks = ownedStockRepository.findAllByAccountUuid(uuid);
+        List<InvestmentDTO> investmentDTOS = ownedStocks.stream().map(this::mapOwnedStockToInvestmentDTO).
+                collect(Collectors.toList());
+
+        return investmentDTOS;
+    }
+
+    private InvestmentDTO mapOwnedStockToInvestmentDTO(OwnedStock ownedStock) {
+        Stock stock = stockRepository.findByStockCode(ownedStock.getStockCode())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_STOCK));
+
+        StockChart stockChart = stockChartRepository.findStockChartsByStockCode(stock.getStockCode(), PageRequest.of(0, 1))
+                .stream().findFirst()
+                .orElseThrow(() -> new RuntimeException("No StockChart found for stockCode: " + stock.getStockCode()));
+
+        BigDecimal pricePerShare = ownedStock.getTotalPurchasePrice().divide(new BigDecimal(ownedStock.getQuantity()));
+        BigDecimal profit = stockChart.getCurrentPrice().subtract(pricePerShare);
+        BigDecimal profitRate = profit.divide(pricePerShare, 4, RoundingMode.HALF_UP) // 소수점 4자리까지 계산
+                .multiply(BigDecimal.valueOf(100));
+
+        return InvestmentDTO.builder()
+                .stockName(stock.getStockName())
+                .stockCode(ownedStock.getStockCode())
+                .price(stockChart.getCurrentPrice())
+                .quantity(ownedStock.getQuantity())
+                .profit(profit)
+                .profitPercent(profitRate)
+                .build();
+    }
+
     public List<OwnedIpoDTO> getOwnedIpoDTO(String uuid){
         List<OwnedIPO> ownedIPOS = ownedIPORepository.findAllByAccountUuid(uuid);
 
@@ -261,10 +298,16 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private ProfitLossDTO mapProfitLossToProfitLossDTO(ProfitLoss profitLoss) {
-        return ProfitLossDTO.builder().id(profitLoss.getProfitLossId()).stockCode(profitLoss.getStockCode())
-                .stockName(profitLoss.getStockName()).purchasePricePerShare(profitLoss.getPurchasePricePerShare())
-                .salePricePerShare(profitLoss.getSalePricePerShare()).profitRate(profitLoss.getProfitRate())
-                .fee(profitLoss.getFee()).saleQuantity(profitLoss.getSaleQuantity()).build();
+        return ProfitLossDTO.builder()
+                .id(profitLoss.getProfitLossId())
+                .stockCode(profitLoss.getStockCode())
+                .stockName(profitLoss.getStockName())
+                .purchasePricePerShare(profitLoss.getPurchasePricePerShare())
+                .salePricePerShare(profitLoss.getSalePricePerShare())
+                .profitRate(profitLoss.getProfitRate())
+                .fee(profitLoss.getFee())
+                .saleQuantity(profitLoss.getSaleQuantity())
+                .build();
     }
 
 }
