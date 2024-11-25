@@ -15,6 +15,7 @@ const Container = styled.div`
   padding: 25px 50px 0 5px;
   background: #ffffff;
 `;
+
 const Title = styled.h1`
   font-size: 26px;
   font-weight: 600;
@@ -53,6 +54,11 @@ const Tab = styled.button`
   }
 `;
 
+const DatePickerContainer = styled.div`
+  position: relative;
+  margin-bottom: 32px;
+`;
+
 const PeriodSelector = styled.button`
   display: flex;
   align-items: center;
@@ -64,11 +70,39 @@ const PeriodSelector = styled.button`
   color: #333;
   font-size: 14px;
   cursor: pointer;
-  margin-bottom: 32px;
   
   &::after {
     content: '▼';
     font-size: 10px;
+  }
+`;
+
+const DatePickerDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #E5E8EB;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 100;
+  margin-top: 4px;
+  width: 200px;
+`;
+
+const YearMonthButton = styled.button`
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  font-size: 14px;
+  
+  &:hover {
+    background: #F8F9FA;
   }
 `;
 
@@ -117,12 +151,12 @@ const Modal = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 32px 24px 24px;  // 상단 패딩 조정
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
 `;
 
 const Overlay = styled.div`
@@ -138,8 +172,9 @@ const Overlay = styled.div`
 const DetailRow = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  padding: 8px 0;
   
   &:last-child {
     margin-bottom: 0;
@@ -148,11 +183,32 @@ const DetailRow = styled.div`
 
 const DetailLabel = styled.span`
   color: #666;
+  font-weight: 400;
 `;
 
 const DetailValue = styled.span`
   color: #333;
-  font-weight: 500;
+  text-align: right;
+  font-weight: 400;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 12px;          // 위치 조정
+  right: 12px;        // 위치 조정
+  background: none;
+  border: none;
+  font-size: 20px;    // 크기 조정
+  cursor: pointer;
+  color: #666;
+  width: 20px;        // 크기 조정
+  height: 20px;       // 크기 조정
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  z-index: 1001;
 `;
 
 function OrderLog() {
@@ -163,85 +219,61 @@ function OrderLog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth());
+  });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
 
-        const token = localStorage.getItem('jwtToken');
-        console.log('Token exists:', !!token);
-        
-        if (!token) {
-          setError('로그인이 필요합니다.');
-          setLoading(false);
-          return;
-        }
+// useEffect 수정
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        };
-
-        // 1. 사용자 정보 가져오기
-        console.log('Fetching user info...');
-        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
-        console.log('User info response:', userResponse.data);
-        
-        setUser(userResponse.data);
-        const primaryAccountId = userResponse.data.primaryAccountId;
-        console.log('Primary Account ID from user:', primaryAccountId);
-
-        if (!primaryAccountId) {
-          setError('주계좌 정보를 찾을 수 없습니다.');
-          setLoading(false);
-          return;
-        }
-
-        // 2. 주문내역 가져오기
-        console.log('Fetching orders for account:', primaryAccountId);
-        const response = await axios.get(`${API_BASE_URL}/account/orders`, {
-          headers,
-          params: {
-            accountId: primaryAccountId,
-            type: activeTab !== '전체' ? activeTab : undefined
-          }
-        });
-
-        console.log('Orders response:', response.data);
-        setOrders(response.data || []);
-
-      } catch (error) {
-        console.error('API 호출 중 에러 발생:', error);
-        console.error('Error details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers,
-            params: error.config?.params
-          }
-        });
-
-        if (error.response?.status === 401) {
-          setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
-          localStorage.removeItem('jwtToken');
-        } else {
-          setError(
-            error.response?.data?.message ||
-            '정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.'
-          );
-        }
-      } finally {
+      const token = localStorage.getItem('jwtToken');
+      
+      if (!token) {
+        setError('로그인이 필요합니다.');
         setLoading(false);
+        return;
       }
-    };
 
-    fetchData();
-  }, [activeTab]);
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await axios.get(`${API_BASE_URL}/account/orders`, {
+        headers,
+        params: {
+          accountId: user?.primaryAccountId,
+          type: activeTab !== '전체' ? activeTab : undefined,
+          year: selectedDate.getFullYear(),
+          month: selectedDate.getMonth() + 1
+        }
+      });
+
+      // 선택된 월에 해당하는 주문만 필터링
+      const filteredOrders = (response.data || []).filter(order => {
+        const orderDate = new Date(order.orderTime);
+        return orderDate.getFullYear() === selectedDate.getFullYear() &&
+               orderDate.getMonth() === selectedDate.getMonth();
+      });
+
+      setOrders(filteredOrders);
+
+    } catch (error) {
+      // ... error handling
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [activeTab, selectedDate, user]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -258,13 +290,21 @@ function OrderLog() {
 
   const formatDateTime = (timestamp) => {
     if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const date = new Date(timestamp);
+    return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}. ${date.getHours() >= 12 ? '오후' : '오전'} ${String(date.getHours() % 12 || 12).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const generateYearMonths = () => {
+    const months = [];
+    const currentDate = new Date();
+    
+    // 현재 월부터 이전 11개월
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      months.push(date);
+    }
+    
+    return months;
   };
 
   return (
@@ -285,17 +325,28 @@ function OrderLog() {
             {error}
           </div>
         )}
-        
-        <TabsContainer>
-          <TabList>
-            <Tab active={activeTab === '전체'} onClick={() => setActiveTab('전체')}>전체</Tab>
-            <Tab active={activeTab === '주간주문'} onClick={() => setActiveTab('주간주문')}>주간주문</Tab>
-          </TabList>
-        </TabsContainer>
-        
-        <PeriodSelector>
-          확인할 주문 2024년 1월
-        </PeriodSelector>
+               
+        <DatePickerContainer>
+  <PeriodSelector onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}>
+    확인할 주문 {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
+  </PeriodSelector>
+  
+  {isDatePickerOpen && (
+    <DatePickerDropdown>
+      {generateYearMonths().map((date, index) => (
+        <YearMonthButton
+          key={index}
+          onClick={() => {
+            setSelectedDate(date);
+            setIsDatePickerOpen(false);
+          }}
+        >
+          {date.getFullYear()}년 {date.getMonth() + 1}월
+        </YearMonthButton>
+      ))}
+    </DatePickerDropdown>
+  )}
+</DatePickerContainer>
         
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
@@ -311,15 +362,17 @@ function OrderLog() {
               orders.map((order, index) => (
                 <OrderCard key={index} onClick={() => {
                   setSelectedOrder(order);
-                  setOrderDetail(order);  // 상세 정보가 별도 API가 아닌 경우
+                  setOrderDetail(order);
                 }}>
                   <OrderInfo>
-                    <StockName>{order.date}</StockName>
-                    <OrderStatus color={getStatusColor(order.status)}>{order.status}</OrderStatus>
+                    <StockName>{order.stockName}</StockName>
+                    <OrderStatus color={getStatusColor(order.status)}>
+                      {order.status}
+                    </OrderStatus>
                   </OrderInfo>
                   <OrderDetail>
-                    <span>{order.name}</span>
-                    <span>{order.quantity}주</span>
+                    <span>{formatDateTime(order.orderTime)}</span>
+                    <span>{formatNumber(order.quantity)}주</span>
                   </OrderDetail>
                 </OrderCard>
               ))
@@ -331,40 +384,31 @@ function OrderLog() {
           <>
             <Overlay onClick={() => setSelectedOrder(null)} />
             <Modal>
+              <CloseButton onClick={() => setSelectedOrder(null)}>×</CloseButton>
               <DetailRow>
                 <DetailLabel>종목명</DetailLabel>
-                <DetailValue>{orderDetail.stock_name}</DetailValue>
-              </DetailRow>
-              <DetailRow>
-                <DetailLabel>주문유형</DetailLabel>
-                <DetailValue>{orderDetail.type === 'purchase' ? '매수' : '매도'}</DetailValue>
+                <DetailValue>{orderDetail.stockName}</DetailValue>
               </DetailRow>
               <DetailRow>
                 <DetailLabel>주문상태</DetailLabel>
-                <DetailValue>{orderDetail.order_status}</DetailValue>
+                <DetailValue>{orderDetail.status}</DetailValue>
               </DetailRow>
               <DetailRow>
-                <DetailLabel>주당 가격</DetailLabel>
-                <DetailValue>{formatNumber(orderDetail.price_per_one)}원</DetailValue>
+                <DetailLabel>주문수량</DetailLabel>
+                <DetailValue>{formatNumber(orderDetail.quantity)}주</DetailValue>
               </DetailRow>
               <DetailRow>
-                <DetailLabel>총 금액</DetailLabel>
-                <DetailValue>{formatNumber(orderDetail.total_price)}원</DetailValue>
+                <DetailLabel>주문가격</DetailLabel>
+                <DetailValue>{formatNumber(orderDetail.price)}원</DetailValue>
               </DetailRow>
               <DetailRow>
                 <DetailLabel>주문 방식</DetailLabel>
-                <DetailValue>{orderDetail.order_type}</DetailValue>
+                <DetailValue>{orderDetail.type}</DetailValue>
               </DetailRow>
               <DetailRow>
                 <DetailLabel>주문 시간</DetailLabel>
-                <DetailValue>{formatDateTime(orderDetail.order_time)}</DetailValue>
+                <DetailValue>{formatDateTime(orderDetail.orderTime)}</DetailValue>
               </DetailRow>
-              {orderDetail.filled_time && (
-                <DetailRow>
-                  <DetailLabel>체결 시간</DetailLabel>
-                  <DetailValue>{formatDateTime(orderDetail.filled_time)}</DetailValue>
-                </DetailRow>
-              )}
             </Modal>
           </>
         )}

@@ -18,20 +18,19 @@ const Container = styled.div`
   background: #ffffff;
 `;
 
-const Title = styled.div`
-  font-size: 26px;
-  font-weight: 600;
+const AccountAlias = styled.div`
+  font-size: 14px;
   color: #333;
-  margin-bottom: 0;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
 `;
 
-const AccountNumber = styled.div`
-  font-size: 14px;
-  color: #666;
+const AccountTitle = styled.div`
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
   margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  letter-spacing: -0.5px;
 `;
 
 const MainContent = styled.div`
@@ -189,6 +188,10 @@ function AssetLog() {
     }).format(amount).replace('₩', '') + '원';
   };
 
+  const formatAccountNumber = (accountId) => {
+    return `코코넛증권 ${accountId}`;
+  };
+
   if (loading) {
     return (
       <Container>
@@ -203,14 +206,12 @@ function AssetLog() {
     <>
       <GlobalStyle />
       <Container>
-        <Title>자산</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         {accountData && (
           <>
-            <AccountNumber>
-              {user?.username || user?.email || '사용자'}님의 계좌 {accountData.accountAlias || ''} {accountData.accountId || ''}
-            </AccountNumber>
+            <AccountAlias>{accountData.accountAlias || '계좌'}</AccountAlias>
+            <AccountTitle>{formatAccountNumber(accountData.accountId)}</AccountTitle>
 
             <MainContent>
               <Balance>{formatKRW(accountData.total_assets)}</Balance>

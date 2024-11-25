@@ -87,12 +87,21 @@ const SearchInput = styled.input`
   border: none;
   outline: none;
   background-color: transparent;
-  font-size: 16px;
+  font-size: 14px;  // 16px에서 14px로 변경
+  font-weight: 400;  // 추가
+  font-family: inherit;  // 추가
   color: #666;
   width: 100%;
 
   &:focus {
     outline: none;
+  }
+
+  &::placeholder {
+    color: #8b95a1;
+    font-size: 14px;  // placeholder 폰트 크기도 통일
+    font-weight: 400;  // placeholder 폰트 무게도 통일
+    font-family: inherit;  // placeholder 폰트도 통일
   }
 `;
 
@@ -116,39 +125,99 @@ const LoginButton = styled.button`
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;  // 통일
+  font-family: inherit;  // 통일
   cursor: pointer;
   white-space: nowrap;
 `;
 
-const WelcomeMessage = styled(Link)`
-  font-size: 15px;
-  color: #333;
-  text-decoration: none;
+const ProfileButton = styled.button`
+  padding: 8px;
+  border-radius: 50%;
+  border: none;
   cursor: pointer;
-  white-space: nowrap;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
-    text-decoration: underline;
+    background: #f3f4f6;
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    color: #666;
   }
 `;
 
-const LogoutButton = styled.button`
-  background: transparent;
-  color: #8b95a1;
-  border: 1px solid #ccc;
+const DropdownCard = styled.div`
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 200px;
+  background: white;
   border-radius: 8px;
-  padding: 6px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+`;
+
+const DropdownHeader = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #f2f2f2;
+`;
+
+const DropdownUsername = styled.p`
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+`;
+
+const DropdownContent = styled.div`
+  padding: 4px 0;
+`;
+
+const DropdownLink = styled(Link)`
+  display: block;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;  // 기본 폰트 웨이트로 통일
+  font-family: inherit;  // 부모 요소의 폰트 패밀리 상속
+  color: #4b5563;
+  text-decoration: none;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+`;
+
+const DropdownButton = styled.button`
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 400;  // 기본 폰트 웨이트로 통일
+  font-family: inherit;  // 부모 요소의 폰트 패밀리 상속
+  color: #4174f6;
+  text-align: left;
   cursor: pointer;
-  white-space: nowrap;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+  }
 `;
 
 const Header = ({ user, setUser }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     const checkAndFetchUserInfo = async () => {
@@ -199,12 +268,26 @@ const Header = ({ user, setUser }) => {
     const username = user?.username;
     localStorage.removeItem('jwtToken');
     setUser(null);
-    
-    // 로그아웃 메시지 표시
+    setIsProfileOpen(false);
     alert(`${username}님, 코코넛증권은 언제나 고객님을 기다릴게요! 다음에 또 만나요 🌴`);
-    
     navigate('/');
   };
+
+  const handleProfileClick = () => {
+    setIsProfileOpen(!isProfileOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isProfileOpen && !event.target.closest('.profile-dropdown')) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileOpen]);
 
   return (
     <HeaderContainer>
@@ -221,10 +304,7 @@ const Header = ({ user, setUser }) => {
           <NavItem to="/subscription" $isActive={location.pathname.includes('subscription')}>
             공모주 청약
           </NavItem>
-          <NavItem 
-            to="/account"
-            $isActive={location.pathname.includes('account')}
-          >
+          <NavItem to="/account" $isActive={location.pathname.includes('account')}>
             내 계좌
           </NavItem>
         </Nav>
@@ -245,11 +325,32 @@ const Header = ({ user, setUser }) => {
             </SearchIcon>
           </SearchButton>
         </SearchBox>
+
         {user ? (
-          <>
-            <WelcomeMessage to="/mypage">{user.username}님 반갑습니다!</WelcomeMessage>
-            <LogoutButton onClick={handleLogoutClick}>로그아웃</LogoutButton>
-          </>
+          <div className="profile-dropdown" style={{ position: 'relative' }}>
+            <ProfileButton onClick={handleProfileClick}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </ProfileButton>
+            
+            {isProfileOpen && (
+              <DropdownCard>
+                <DropdownHeader>
+                  <DropdownUsername>{user.username}님 안녕하세요</DropdownUsername>
+                </DropdownHeader>
+                <DropdownContent>
+                  <DropdownLink to="/mypage" onClick={() => setIsProfileOpen(false)}>
+                    내 정보 보기
+                  </DropdownLink>
+                  <DropdownButton onClick={handleLogoutClick}>
+                    로그아웃
+                  </DropdownButton>
+                </DropdownContent>
+              </DropdownCard>
+            )}
+          </div>
         ) : (
           <LoginButton onClick={handleLoginClick}>로그인</LoginButton>
         )}

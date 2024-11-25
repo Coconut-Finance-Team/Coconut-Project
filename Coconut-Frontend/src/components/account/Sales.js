@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
-import { createGlobalStyle } from 'styled-components'; // createGlobalStyle 추가
+import { createGlobalStyle } from 'styled-components';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -13,12 +13,12 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+// Keeping your existing styled components...
 const Container = styled.div`
   padding: 40px 40px 0 5px;
   background: #ffffff;
 `;
 
-// Transaction.js와 동일한 헤더 스타일
 const Title = styled.div`
   font-size: 26px;
   font-weight: 600;
@@ -117,6 +117,18 @@ function Sales() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
+  // Transform API data to match component's expected format
+  const transformSalesData = (salesData) => {
+    return salesData.map(sale => ({
+      id: sale.id,
+      date: dayjs(sale.saleDate).format('YYYY-MM-DD HH:mm:ss'),
+      name: sale.stockName,
+      quantity: sale.quantity,
+      profit: (sale.salePricePerShare - sale.purchasePricePerShare) * sale.quantity,
+      profit_rate: ((sale.salePricePerShare - sale.purchasePricePerShare) / sale.purchasePricePerShare * 100).toFixed(2)
+    }));
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -124,7 +136,6 @@ function Sales() {
         setError(null);
 
         const token = localStorage.getItem('jwtToken');
-        console.log('Token exists:', !!token);
         
         if (!token) {
           setError('로그인이 필요합니다.');
@@ -138,13 +149,9 @@ function Sales() {
         };
 
         // 1. 사용자 정보 가져오기
-        console.log('Fetching user info...');
         const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
-        console.log('User info response:', userResponse.data);
-        
         setUser(userResponse.data);
         const primaryAccountId = userResponse.data.primaryAccountId;
-        console.log('Primary Account ID from user:', primaryAccountId);
 
         if (!primaryAccountId) {
           setError('주계좌 정보를 찾을 수 없습니다.');
@@ -153,7 +160,6 @@ function Sales() {
         }
 
         // 2. 판매 수익 정보 가져오기
-        console.log('Fetching sales profit for account:', primaryAccountId);
         const response = await axios.get(`${API_BASE_URL}/account/sales-profit`, {
           headers,
           params: {
@@ -163,28 +169,17 @@ function Sales() {
           }
         });
 
-        console.log('Sales profit response:', response.data);
-        setOrders(response.data.sales_history || []);
+        // Transform the data to match your component's expected format
+        const transformedOrders = transformSalesData(response.data);
+        setOrders(transformedOrders);
         
-        // 총 수익 계산
-        const total = (response.data.sales_history || [])
-          .reduce((acc, order) => acc + order.profit, 0);
+        // Calculate total profit
+        const total = transformedOrders.reduce((acc, order) => acc + order.profit, 0);
         setTotalProfit(total);
 
       } catch (error) {
         console.error('API 호출 중 에러 발생:', error);
-        console.error('Error details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers,
-            params: error.config?.params
-          }
-        });
-
+        
         if (error.response?.status === 401) {
           setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('jwtToken');
@@ -200,7 +195,7 @@ function Sales() {
     };
 
     fetchData();
-  }, [activeMonth]); // activeMonth가 변경될 때마다 데이터를 다시 불러옴
+  }, [activeMonth]);
 
   const changeMonth = (direction) => {
     if (direction === 'previous') {

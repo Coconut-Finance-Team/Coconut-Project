@@ -215,8 +215,6 @@ function MyPage() {
           </InfoItem>
         </InfoGrid>
       </InfoSection>
-      
-      <Button onClick={handleLogoutClick}>로그아웃</Button>
     </PageContainer>
   );
 }

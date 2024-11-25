@@ -106,12 +106,12 @@ const Modal = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 48px 24px;
+  border-radius: 20px;          // 모서리를 더 둥글게
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  // 그림자를 더 자연스럽게
   z-index: 1000;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
 `;
 
 const Overlay = styled.div`
@@ -127,8 +127,9 @@ const Overlay = styled.div`
 const DetailRow = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  padding: 8px 0;
   
   &:last-child {
     margin-bottom: 0;
@@ -137,22 +138,31 @@ const DetailRow = styled.div`
 
 const DetailLabel = styled.span`
   color: #666;
+  font-weight: 400;
 `;
 
 const DetailValue = styled.span`
   color: #333;
-  font-weight: 500;
+  text-align: right;
+  font-weight: 400;
 `;
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 2px;
+  right: 12px;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   color: #666;
+  width: 24px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
 `;
 
 const TransactionLog = () => {
@@ -164,6 +174,14 @@ const TransactionLog = () => {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
   
+  // 상태 매핑
+  const statusMapping = {
+    'DEPOSIT': '입금',
+    'WITHDRAWAL': '출금',
+    'BUY': '매수',
+    'SELL': '매도'
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -171,7 +189,6 @@ const TransactionLog = () => {
         setError(null);
 
         const token = localStorage.getItem('jwtToken');
-        console.log('Token exists:', !!token);
         
         if (!token) {
           setError('로그인이 필요합니다.');
@@ -184,14 +201,9 @@ const TransactionLog = () => {
           'Content-Type': 'application/json'
         };
 
-        // 1. 사용자 정보 가져오기
-        console.log('Fetching user info...');
         const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
-        console.log('User info response:', userResponse.data);
-        
         setUser(userResponse.data);
         const primaryAccountId = userResponse.data.primaryAccountId;
-        console.log('Primary Account ID from user:', primaryAccountId);
 
         if (!primaryAccountId) {
           setError('주계좌 정보를 찾을 수 없습니다.');
@@ -199,10 +211,7 @@ const TransactionLog = () => {
           return;
         }
 
-        // 2. 거래내역 가져오기
-        console.log('Fetching transactions for account:', primaryAccountId);
         let endpoint = `${API_BASE_URL}/account/transactions/all`;
-        
         const response = await axios.get(endpoint, {
           headers,
           params: {
@@ -211,23 +220,22 @@ const TransactionLog = () => {
           }
         });
 
-        console.log('Transactions response:', response.data);
-        setTransactions(response.data || []);
+        // 데이터 처리 및 필터링
+        let processedTransactions = (response.data || []).map(transaction => ({
+          ...transaction,
+          status: statusMapping[transaction.status] || transaction.status
+        }));
+
+        if (activeFilter !== '전체') {
+          processedTransactions = processedTransactions.filter(
+            transaction => transaction.type === activeFilter
+          );
+        }
+
+        setTransactions(processedTransactions);
 
       } catch (error) {
         console.error('API 호출 중 에러 발생:', error);
-        console.error('Error details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers,
-            params: error.config?.params
-          }
-        });
-
         if (error.response?.status === 401) {
           setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('jwtToken');
@@ -249,6 +257,27 @@ const TransactionLog = () => {
     setActiveFilter(filter);
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}년 ${month}월 ${day}일 ${hours}시 ${minutes}분`;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return dateStr;
+    }
+  };
+
+  const formatAmount = (amount) => {
+    if (amount === undefined || amount === null) return '0원';
+    return amount.toLocaleString() + '원';
+  };
+
   const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
     setDetailData({
@@ -259,16 +288,6 @@ const TransactionLog = () => {
       time: transaction.date,
       status: transaction.status
     });
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return dateStr;
-  };
-
-  const formatAmount = (amount) => {
-    if (amount === undefined || amount === null) return '0원';
-    return amount.toLocaleString() + '원';
   };
 
   const renderDetailContent = () => {
@@ -312,12 +331,16 @@ const TransactionLog = () => {
           <DetailValue>{detailData.type}</DetailValue>
         </DetailRow>
         <DetailRow>
-          <DetailLabel>금액</DetailLabel>
-          <DetailValue>{formatAmount(detailData.amount)}</DetailValue>
+          <DetailLabel>거래자</DetailLabel>
+          <DetailValue>{detailData.name}</DetailValue>
         </DetailRow>
         <DetailRow>
           <DetailLabel>상태</DetailLabel>
           <DetailValue>{detailData.status}</DetailValue>
+        </DetailRow>
+        <DetailRow>
+          <DetailLabel>금액</DetailLabel>
+          <DetailValue>{formatAmount(detailData.amount)}</DetailValue>
         </DetailRow>
         <DetailRow>
           <DetailLabel>거래 날짜</DetailLabel>
