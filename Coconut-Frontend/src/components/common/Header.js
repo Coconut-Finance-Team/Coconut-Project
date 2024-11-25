@@ -145,8 +145,7 @@ const LogoutButton = styled.button`
   white-space: nowrap;
 `;
 
-function Header({ user, setUser }) {
-  console.log('Header의 user 값:', user);
+const Header = ({ user, setUser }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -165,8 +164,6 @@ function Header({ user, setUser }) {
             },
           });
   
-          console.log('응답 상태:', response.status);
-          
           if (response.ok) {
             const data = await response.json();
             console.log('받아온 사용자 정보:', data);
@@ -181,8 +178,6 @@ function Header({ user, setUser }) {
           localStorage.removeItem('jwtToken');
           setUser(null);
         }
-      } else {
-        console.log('토큰이 없습니다');
       }
     };
   
@@ -197,12 +192,17 @@ function Header({ user, setUser }) {
   };
 
   const handleLoginClick = () => {
-    navigate('/Login');
+    navigate('/login');
   };
 
   const handleLogoutClick = () => {
+    const username = user?.username;
     localStorage.removeItem('jwtToken');
     setUser(null);
+    
+    // 로그아웃 메시지 표시
+    alert(`${username}님, 코코넛증권은 언제나 고객님을 기다릴게요! 다음에 또 만나요 🌴`);
+    
     navigate('/');
   };
 
@@ -221,7 +221,10 @@ function Header({ user, setUser }) {
           <NavItem to="/subscription" $isActive={location.pathname.includes('subscription')}>
             공모주 청약
           </NavItem>
-          <NavItem to="/account" $isActive={location.pathname.includes('account')}>
+          <NavItem 
+            to="/account"
+            $isActive={location.pathname.includes('account')}
+          >
             내 계좌
           </NavItem>
         </Nav>
@@ -253,6 +256,6 @@ function Header({ user, setUser }) {
       </RightSection>
     </HeaderContainer>
   );
-}
+};
 
 export default Header;

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -157,53 +160,88 @@ function OrderLog() {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetail, setOrderDetail] = useState(null);
-
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uuid: 'ao3r2kngd-39d-dsjen-398djfkjf'
-        })
-      });
-
-      if (!response.ok) throw new Error('주문 내역 조회 실패');
-
-      const data = await response.json();
-      setOrders(data.transaction_history || []);
-    } catch (error) {
-      console.error('주문 내역 조회 중 오류 발생:', error);
-    }
-  };
-
-  const fetchOrderDetail = async (orderId) => {
-    try {
-      const response = await fetch('/api/orders/detail', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uuid: 'ao3r2kngd-39d-dsjen-398djfkjf',
-          order_id: orderId
-        })
-      });
-
-      if (!response.ok) throw new Error('주문 상세 조회 실패');
-
-      const data = await response.json();
-      setOrderDetail(data);
-    } catch (error) {
-      console.error('주문 상세 조회 중 오류 발생:', error);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, [activeTab]); // activeTab이 변경될 때마다 데이터 다시 조회
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const token = localStorage.getItem('jwtToken');
+        console.log('Token exists:', !!token);
+        
+        if (!token) {
+          setError('로그인이 필요합니다.');
+          setLoading(false);
+          return;
+        }
+
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
+        // 1. 사용자 정보 가져오기
+        console.log('Fetching user info...');
+        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
+        console.log('User info response:', userResponse.data);
+        
+        setUser(userResponse.data);
+        const primaryAccountId = userResponse.data.primaryAccountId;
+        console.log('Primary Account ID from user:', primaryAccountId);
+
+        if (!primaryAccountId) {
+          setError('주계좌 정보를 찾을 수 없습니다.');
+          setLoading(false);
+          return;
+        }
+
+        // 2. 주문내역 가져오기
+        console.log('Fetching orders for account:', primaryAccountId);
+        const response = await axios.get(`${API_BASE_URL}/account/orders`, {
+          headers,
+          params: {
+            accountId: primaryAccountId,
+            type: activeTab !== '전체' ? activeTab : undefined
+          }
+        });
+
+        console.log('Orders response:', response.data);
+        setOrders(response.data || []);
+
+      } catch (error) {
+        console.error('API 호출 중 에러 발생:', error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            params: error.config?.params
+          }
+        });
+
+        if (error.response?.status === 401) {
+          setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('jwtToken');
+        } else {
+          setError(
+            error.response?.data?.message ||
+            '정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.'
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeTab]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -234,12 +272,24 @@ function OrderLog() {
       <GlobalStyle />
       <Container>
         <Title>주문내역</Title>
+
+        {error && (
+          <div style={{ 
+            color: '#dc3545', 
+            padding: '16px', 
+            marginBottom: '16px', 
+            background: '#ffebee', 
+            borderRadius: '8px',
+            border: '1px solid #dc3545' 
+          }}>
+            {error}
+          </div>
+        )}
         
         <TabsContainer>
           <TabList>
             <Tab active={activeTab === '전체'} onClick={() => setActiveTab('전체')}>전체</Tab>
             <Tab active={activeTab === '주간주문'} onClick={() => setActiveTab('주간주문')}>주간주문</Tab>
-            <Tab active={activeTab === '예약주문'} onClick={() => setActiveTab('예약주문')}>예약주문</Tab>
           </TabList>
         </TabsContainer>
         
@@ -247,23 +297,35 @@ function OrderLog() {
           확인할 주문 2024년 1월
         </PeriodSelector>
         
-        <OrderList>
-          {orders.map((order, index) => (
-            <OrderCard key={index} onClick={() => {
-              setSelectedOrder(order);
-              fetchOrderDetail(order.id);
-            }}>
-              <OrderInfo>
-                <StockName>{order.date}</StockName>
-                <OrderStatus color={getStatusColor(order.status)}>{order.status}</OrderStatus>
-              </OrderInfo>
-              <OrderDetail>
-                <span>{order.name}</span>
-                <span>{order.quantity}주</span>
-              </OrderDetail>
-            </OrderCard>
-          ))}
-        </OrderList>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            로딩중...
+          </div>
+        ) : (
+          <OrderList>
+            {orders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                주문내역이 없습니다.
+              </div>
+            ) : (
+              orders.map((order, index) => (
+                <OrderCard key={index} onClick={() => {
+                  setSelectedOrder(order);
+                  setOrderDetail(order);  // 상세 정보가 별도 API가 아닌 경우
+                }}>
+                  <OrderInfo>
+                    <StockName>{order.date}</StockName>
+                    <OrderStatus color={getStatusColor(order.status)}>{order.status}</OrderStatus>
+                  </OrderInfo>
+                  <OrderDetail>
+                    <span>{order.name}</span>
+                    <span>{order.quantity}주</span>
+                  </OrderDetail>
+                </OrderCard>
+              ))
+            )}
+          </OrderList>
+        )}
 
         {selectedOrder && orderDetail && (
           <>

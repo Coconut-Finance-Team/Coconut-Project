@@ -55,22 +55,33 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Homeboard />} />
-            <Route path="/account/*" element={<Account />} />
-            <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
-            <Route path="/subscription/*" element={<Subscription />} />
-            <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
+            <Route
+              path="/account/*"
+              element={<Account user={user} setUser={setUser} />}
+            />
+            
+            {/* Subscription 관련 라우트 정리 */}
             <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
-            <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
-            <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+<Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+<Route path="/subscription/apply" element={<SubscriptionApply />} />
+<Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+<Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
+<Route path="/subscription/*" element={<Subscription />} />
+
+            {/* Auth 관련 라우트 */}
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/signin" element={<Signin />} />
             <Route path="/signup/userinfo" element={<SigninUserInfo />} />
             <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
             <Route path="/findidpassword" element={<FindIdPassword />} />
+
+            {/* Chart 관련 라우트 */}
             <Route path="/chart" element={<RealTimeChart />} />
-            <Route path="/stock/:stockId" element={<StockDetail />} />
             <Route path="/chart/kospi" element={<KospiChart />} />
             <Route path="/chart/kosdaq" element={<KosdaqChart />} />
+            <Route path="/stock/:stockId" element={<StockDetail />} />
+
+            {/* 기타 라우트 */}
             <Route path="/search" element={<SearchPage />} />
             <Route path="/mypage" element={<MyPage user={user} />} />
           </Routes>
