@@ -1,4 +1,8 @@
+
 import React, { useState } from 'react';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080/api/v1/admin';
 
 const styles = `
   .user-detail-container {
@@ -205,140 +209,148 @@ const styles = `
   }
 `;
 
-const UserDetail = ({ onBack }) => {
-  const [showModal, setShowModal] = useState(false);
+const UserDetail = ({ user, onBack }) => {
+    const [showModal, setShowModal] = useState(false);
 
-  const userDetail = {
-    name: '홍길동',
-    email: 'hong@example.com',
-    phone: '010-1234-5678',
-    registerDate: '2024.03.15',
-    status: '활성',
-    lastAccess: '2024.03.28 14:23',
-    contract: {
-      number: '123-456-789',
-      date: '2024.03.15',
-      amount: '1,234,567원',
-      status: '활성'
-    },
-    activities: [
-      { time: '2024.03.28 14:23', description: '로그인', detail: 'IP: 123.456.789.0' },
-      { time: '2024.03.28 11:45', description: '주문', detail: '삼성전자 10주 매수' },
-      { time: '2024.03.27 16:30', description: '로그아웃', detail: '-' }
-    ]
-  };
+    if (!user) {
+        return <div>로딩 중...</div>;
+    }
 
-  const handleTradeStop = () => {
-    setShowModal(true);
-  };
+    const handleTradeStop = async () => {
+        try {
+            await axios.patch(`${API_BASE_URL}/suspend/account/${user.accountInfo.accountId}`);
+            setShowModal(true);
+        } catch (error) {
+            console.error('계정 정지 실패:', error);
+            alert('계정 정지에 실패했습니다.');
+        }
+    };
 
-  return (
-    <>
-      <style>{styles}</style>
-      <div className="user-detail-container">
-        <button className="back-button" onClick={onBack}>
-          <svg 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-          목록으로
-        </button>
-        
-        <h1 className="page-title">회원 상세 정보</h1>
-
-        <div className="section">
-          <h2 className="section-title">기본 정보</h2>
-          <div className="info-grid">
-            <div className="info-item">
-              <div className="info-label">이름</div>
-              <div className="info-value">{userDetail.name}</div>
-            </div>
-            <div className="info-item">
-              <div className="info-label">이메일</div>
-              <div className="info-value">{userDetail.email}</div>
-            </div>
-            <div className="info-item">
-              <div className="info-label">전화번호</div>
-              <div className="info-value">{userDetail.phone}</div>
-            </div>
-            <div className="info-item">
-              <div className="info-label">가입일</div>
-              <div className="info-value">{userDetail.registerDate}</div>
-            </div>
-            <div className="info-item">
-              <div className="info-label">마지막 로그인</div>
-              <div className="info-value">{userDetail.lastAccess}</div>
-            </div>
-            <div className="info-item">
-              <div className="info-label">회원 상태</div>
-              <div className="info-value">
-                <span className="status-badge">{userDetail.status}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="section">
-          <h2 className="section-title">계약 정보</h2>
-          <div className="activity-list">
-            <div className="contract-item header">
-              <div>계약번호</div>
-              <div>계약일</div>
-              <div>상태</div>
-              <div>관리</div>
-            </div>
-            <div className="contract-item">
-              <div>{userDetail.contract.number}</div>
-              <div>{userDetail.contract.date}</div>
-              <div>
-                <span className="status-badge">{userDetail.contract.status}</span>
-              </div>
-              <div>
-                <button className="delete-button" onClick={handleTradeStop}>
-                  거래정지
+    return (
+        <>
+            <style>{styles}</style>
+            <div className="user-detail-container">
+                <button className="back-button" onClick={onBack}>
+                    <svg 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                    >
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    목록으로
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                
+                <h1 className="page-title">회원 상세 정보</h1>
 
-        <div className="section">
-          <h2 className="section-title">활동 내역</h2>
-          <div className="activity-list">
-            {userDetail.activities.map((activity, index) => (
-              <div key={index} className="activity-item">
-                <div className="activity-time">{activity.time}</div>
-                <div className="activity-description">{activity.description}</div>
-                <div className="activity-detail">{activity.detail}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+                <div className="section">
+                    <h2 className="section-title">기본 정보</h2>
+                    <div className="info-grid">
+                        <div className="info-item">
+                            <div className="info-label">이름</div>
+                            <div className="info-value">{user.username}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">이메일</div>
+                            <div className="info-value">{user.email}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">전화번호</div>
+                            <div className="info-value">{user.phone}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">가입일</div>
+                            <div className="info-value">{new Date(user.createTime).toLocaleDateString()}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">성별</div>
+                            <div className="info-value">{user.gender}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">직업</div>
+                            <div className="info-value">{user.job}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">투자 스타일</div>
+                            <div className="info-value">{user.investmentStyle}</div>
+                        </div>
+                        <div className="info-item">
+                            <div className="info-label">회원 상태</div>
+                            <div className="info-value">
+                                <span className={`status-badge ${user.status === 'SUSPENDED' ? 'inactive' : ''}`}>
+                                    {user.status === 'ACTIVE' ? '활성' : '정지'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        {showModal && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-title">
-                {userDetail.name}님의 계좌에 대한 거래정지를 완료하였습니다.
-              </div>
-              <button 
-                className="modal-button"
-                onClick={() => setShowModal(false)}
-              >
-                확인
-              </button>
+                {user.accountInfo && (
+                    <div className="section">
+                        <h2 className="section-title">계좌 정보</h2>
+                        <div className="activity-list">
+                            <div className="contract-item header">
+                                <div>계좌번호</div>
+                                <div>계좌명</div>
+                                <div>상태</div>
+                                <div>관리</div>
+                            </div>
+                            <div className="contract-item">
+                                <div>{user.accountInfo.accountId}</div>
+                                <div>{user.accountInfo.accountName}</div>
+                                <div>
+                                    <span className={`status-badge ${user.accountInfo.accountStatus === 'CLOSED' ? 'inactive' : ''}`}>
+                                        {user.accountInfo.accountStatus === 'OPEN' ? '활성' : '정지'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <button className="delete-button" onClick={handleTradeStop}>
+                                        거래정지
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {user.userHistory && user.userHistory.length > 0 && (
+                    <div className="section">
+                        <h2 className="section-title">활동 내역</h2>
+                        <div className="activity-list">
+                            {user.userHistory.map((activity, index) => (
+                                <div key={index} className="activity-item">
+                                    <div className="activity-time">
+                                        {new Date(activity.time).toLocaleString()}
+                                    </div>
+                                    <div className="activity-description">{activity.title}</div>
+                                    <div className="activity-detail">{activity.description}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {showModal && (
+                    <div className="modal-overlay">
+                        <div className="modal">
+                            <div className="modal-title">
+                                {user.username}님의 계좌에 대한 거래정지를 완료하였습니다.
+                            </div>
+                            <button 
+                                className="modal-button"
+                                onClick={() => setShowModal(false)}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+        </>
+    );
 };
 
 export default UserDetail;
