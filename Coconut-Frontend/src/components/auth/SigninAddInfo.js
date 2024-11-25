@@ -69,7 +69,7 @@ function SigninAddInfo() {
         </div>
 
         <div style={styles.inputGroup}>
-          <select name="investment_style" value={formData.investment_style} onChange={handleChange} style={styles.inputField}>
+          <select name="investmentStyle" value={formData.investmentStyle} onChange={handleChange} style={styles.inputField} required>
             <option value="">투자 성향 선택</option>
             <option value="conservative">보수적</option>
             <option value="moderate">중간</option>
@@ -77,6 +77,8 @@ function SigninAddInfo() {
           </select>
         </div>
 
+        <div>{styles.inputGroup.job}</div>
+        <div>{styles.inputGroup.investmentStyle}</div>
         <button type="button" onClick={handleCompleteSignup} style={styles.verificationButton}>회원가입 완료</button>
       </form>
     </div>

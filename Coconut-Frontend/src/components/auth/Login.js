@@ -136,7 +136,7 @@ function Login({ setUser }) {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // 기본 동작 막기
+    e.preventDefault();
     try {
       const response = await fetch('http://localhost:8080/api/v1/authenticate', {
         method: 'POST',
@@ -144,18 +144,36 @@ function Login({ setUser }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: formData.id, // Spring Security의 기본 키 'username'으로 변경해야 할 경우 수정
+          id: formData.id,
           password: formData.password,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('로그인 성공:', data);
-        // JWT 토큰 저장 및 리디렉션 처리
-        localStorage.setItem('jwtToken', data.token);
-        alert('로그인 성공!');
-        navigate('/'); // 로그인 후 이동할 페이지
+        const token = data.token;
+        localStorage.setItem('jwtToken', token);
+        
+        // 현재 로그인한 사용자 정보 가져오기
+        const userResponse = await fetch('http://localhost:8080/api/v1/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          console.log('사용자 정보:', userData); // 응답 데이터 확인
+          
+          setUser({
+            username: userData.username
+          });
+          
+          alert('로그인 성공!');
+          navigate('/');
+        } else {
+          console.error('사용자 정보 가져오기 실패');
+        }
       } else {
         const errorData = await response.json();
         console.error('로그인 실패:', errorData);
@@ -165,7 +183,7 @@ function Login({ setUser }) {
       console.error('로그인 요청 중 오류 발생:', error);
       alert('로그인 요청 중 오류가 발생했습니다.');
     }
-  };
+};
 
 const handleGoogleLogin = async () => {
   try {

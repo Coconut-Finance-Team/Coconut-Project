@@ -21,6 +21,7 @@ function Signin() {
  const [verificationCode, setVerificationCode] = useState('');
  const [countdown, setCountdown] = useState(0);
  const [errorMessage, setErrorMessage] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
  const navigate = useNavigate(); 
 
 useEffect(() => {
@@ -120,24 +121,30 @@ useEffect(() => {
  };
 
  const sendVerificationCode = async () => {
-   if (!validateInputs()) return;
+  if (!validateInputs()) return;
 
-   try {
-     const response = await axios.post('http://localhost:8080/api/v1/email/verify/send', {
-       email: formData.email
-     });
+  try {
+    const response = await axios.post('http://localhost:8080/api/v1/email/verify/send', {
+      email: formData.email
+    });
 
-     if (response.data.success) {
-       setCountdown(180);
-       setErrorMessage('');
-     } else {
-       setErrorMessage(response.data.message || '인증번호 전송에 실패했습니다.');
-     }
-   } catch (error) {
-     console.error('인증번호 전송 오류:', error);
-     setErrorMessage('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
-   }
- };
+    if (response.data.success) {
+      setCountdown(180);
+      setErrorMessage('');
+      // 성공 메시지 표시
+      setSuccessMessage('인증번호가 고객님의 이메일로 전송되었습니다! 확인해주세요!');
+      // 3초 후 성공 메시지 제거
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+    } else {
+      setErrorMessage(response.data.message || '인증번호 전송에 실패했습니다.');
+    }
+  } catch (error) {
+    console.error('인증번호 전송 오류:', error);
+    setErrorMessage('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
+  }
+};
 
  const verifyCode = async () => {
    if (!formData.agreeTerms || !formData.agreeService || 
@@ -191,9 +198,13 @@ const isVerifyCodeButtonEnabled = isGoogleUser
     formData.agreePrivacy && 
     formData.agreeThirdParty);
 
-  return (
-   <div style={styles.signupContainer}>
-     <h2 style={styles.title}>회원가입</h2>
+    return (
+      <div style={styles.signupContainer}>
+        <h2 style={styles.title}>회원가입</h2>
+  
+        {/* 성공 메시지 표시 - 에러 메시지 위에 배치 */}
+        {successMessage && <p style={styles.successMessage}>{successMessage}</p>}
+        {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
 
      <form style={styles.signupForm}>
        <div style={styles.inputGroup}>
@@ -446,10 +457,25 @@ const styles = {
     color: '#555',
     fontFamily: 'Noto Sans KR, sans-serif',
   },
+  successMessage: {
+    color: '#4CAF50',          // 초록색
+    fontSize: '14px',
+    backgroundColor: '#E8F5E9', // 연한 초록색 배경
+    padding: '12px 20px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    textAlign: 'center',
+    fontFamily: 'Noto Sans KR, sans-serif',
+    fontWeight: '500',
+  },
   errorMessage: {
     color: '#d32f2f',
     fontSize: '14px',
-    marginTop: '20px',
+    backgroundColor: '#FFEBEE',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    textAlign: 'center',
     fontFamily: 'Noto Sans KR, sans-serif',
   },
 };
