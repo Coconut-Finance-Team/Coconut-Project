@@ -217,9 +217,11 @@ const UserDetail = ({ user, onBack }) => {
       }
 
       const data = await response.json();
+      console.log('User Detail Response:', data);
       setUserDetail(data);
       setError(null);
     } catch (err) {
+      console.error('API Error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -241,13 +243,13 @@ const UserDetail = ({ user, onBack }) => {
   };
 
   const formatStatus = (status) => {
-    switch (status) {
-      case 'ACTIVE':
-        return '활성';
+    switch (status?.toUpperCase()) {
       case 'SUSPENDED':
         return '비활성';
+      case 'OPEN':
+      case 'ACTIVE':
       default:
-        return status;
+        return '활성';
     }
   };
 
@@ -276,7 +278,7 @@ const UserDetail = ({ user, onBack }) => {
         throw new Error(errorMessage);
       }
   
-      await fetchUserDetail(); // 성공 후 사용자 정보 새로고침
+      await fetchUserDetail();
       setShowModal(true);
     } catch (err) {
       console.error('Error:', err);
@@ -293,6 +295,13 @@ const UserDetail = ({ user, onBack }) => {
   if (!userDetail) {
     return <div className="error-message">사용자 정보를 찾을 수 없습니다.</div>;
   }
+
+  // 계좌 및 상태 관련 데이터
+  const accountInfo = userDetail.accountInfo || {};
+  const userStatus = userDetail.status;
+  const accountStatus = accountInfo.accountStatus;
+  const isAccountSuspended = userStatus === 'SUSPENDED';
+  const hasAccount = !!accountInfo.accountId;
 
   return (
     <>
@@ -350,8 +359,8 @@ const UserDetail = ({ user, onBack }) => {
             <div className="info-item">
               <div className="info-label">회원 상태</div>
               <div className="info-value">
-                <span className={`status-badge ${userDetail.status === 'SUSPENDED' ? 'inactive' : ''}`}>
-                  {formatStatus(userDetail.status)}
+                <span className={`status-badge ${isAccountSuspended ? 'inactive' : ''}`}>
+                  {formatStatus(userStatus)}
                 </span>
               </div>
             </div>
@@ -367,20 +376,28 @@ const UserDetail = ({ user, onBack }) => {
               <div>관리</div>
             </div>
             <div className="contract-item">
-              <div>{userDetail.primaryAccountId}</div>
               <div>
-                <span className={`status-badge ${userDetail.status === 'SUSPENDED' ? 'inactive' : ''}`}>
-                  {formatStatus(userDetail.status)}
+                {hasAccount ? (
+                  <>
+                    {accountInfo.accountId}
+                    {accountInfo.accountName && ` (${accountInfo.accountName})`}
+                  </>
+                ) : '계좌 정보 없음'}
+              </div>
+              <div>
+                <span className={`status-badge ${isAccountSuspended ? 'inactive' : ''}`}>
+                  {formatStatus(accountStatus)}
                 </span>
               </div>
               <div>
                 <button 
                   className="delete-button" 
                   onClick={handleTradeStop}
-                  disabled={userDetail.status === 'SUSPENDED' || suspendLoading}
+                  disabled={isAccountSuspended || suspendLoading || !hasAccount}
                 >
                   {suspendLoading ? '처리중...' : 
-                   userDetail.status === 'SUSPENDED' ? '거래정지됨' : '거래정지'}
+                   isAccountSuspended ? '거래정지됨' : 
+                   !hasAccount ? '계좌없음' : '거래정지'}
                 </button>
               </div>
             </div>
