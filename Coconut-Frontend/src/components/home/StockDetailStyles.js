@@ -198,13 +198,14 @@ export const PriceTypeContainer = styled.div`
 `;
 
 export const PriceInput = styled.div`
-  width: 90%;
+  width: 100%;
   height: 48px;
   display: flex;
   align-items: center;
   background: #F2F4F6;
   border-radius: 14px;
   padding: 0 16px;
+  box-sizing: border-box;
 
   input {
     width: 100%;
@@ -259,6 +260,18 @@ export const QuantityInputContainer = styled.div`
     
     &:focus {
       outline: none;
+    }
+
+    /* Chrome, Safari, Edge, Opera */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Firefox */
+    &[type=number] {
+      -moz-appearance: textfield;
     }
   }
 
