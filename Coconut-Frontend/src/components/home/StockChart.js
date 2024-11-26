@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
 import {
   Chart,
   CategoryScale,
@@ -11,6 +10,7 @@ import {
   Tooltip
 } from 'chart.js';
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
+import * as S from './StockChartStyles';
 
 Chart.register(
   CategoryScale,
@@ -24,47 +24,10 @@ Chart.register(
   Tooltip
 );
 
-const ChartWrapper = styled.div`
-  width: 100%;
-  height: 100%;
-  background-color: #fff;
-  box-sizing: border-box;
-  overflow: hidden;
-  padding-right: 5px;
-`;
-
-const TimeframeContainer = styled.div`
-  display: flex;
-  gap: 4px;
-  padding: 8px;
-`;
-
-const TimeButton = styled.button`
-  padding: 6px 12px;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  background-color: ${props => props.active ? '#f5f5f5' : '#fff'};
-  color: ${props => props.active ? '#333' : '#666'};
-  font-size: 13px;
-  cursor: pointer;
-`;
-
-const CanvasContainer = styled.div`
-  width: 100%;
-  height: calc(100% - 44px);
-  position: relative;
-`;
-
 const TIMEFRAMES = [
   { key: '1min', label: '1분', minutes: 1 },
   { key: '10min', label: '10분', minutes: 10 }
 ];
-
-const STOCK_CODES = {
-  'skhynix': '000660',
-  'samsung': '005930',
-  'naver': '066570'  // 실제로는 LG전자 데이터
-};
 
 const StockChart = ({ stockId }) => {
   const [timeframe, setTimeframe] = useState(TIMEFRAMES[0]);
@@ -75,35 +38,6 @@ const StockChart = ({ stockId }) => {
   const containerRef = useRef(null);
   const wsRef = useRef(null);
 
-  // LocalStorage keys
-  const getStorageKey = (stockCode, timeframe) => 
-    `stockData_${stockCode}_${timeframe.minutes}`;
-
-  // Load data from localStorage on mount
-  useEffect(() => {
-    console.log('Loading data from localStorage...');
-    const storageKey = getStorageKey(STOCK_CODES[stockId], timeframe);
-    const savedData = localStorage.getItem(storageKey);
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      // 24시간 이내의 데이터만 유지
-      const recentData = parsedData.filter(candle => 
-        new Date(candle.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-      );
-      console.log('Loaded data:', recentData);
-      setData(recentData);
-    }
-  }, [stockId, timeframe]);
-
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    if (data.length > 0) {
-      console.log('Saving data to localStorage...');
-      const storageKey = getStorageKey(STOCK_CODES[stockId], timeframe);
-      localStorage.setItem(storageKey, JSON.stringify(data));
-    }
-  }, [data, stockId, timeframe]);
-
   const handleResize = () => {
     if (containerRef.current && chartRef.current && chartInstance.current) {
       const container = containerRef.current;
@@ -113,87 +47,127 @@ const StockChart = ({ stockId }) => {
     }
   };
 
-  useEffect(() => {
-    console.log(`Connecting to WebSocket for ${stockId}...`);
-    if (wsRef.current) {
-      console.log('Closing existing connection...');
-      wsRef.current.close();
-    }
-
-    wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${STOCK_CODES[stockId]}`);
-
-    wsRef.current.onopen = () => {
-      console.log('WebSocket connected successfully!');
+  const connectWebSocket = () => {
+    if (!stockId) return;
+    
+    const ws = new WebSocket(`ws://localhost:8080/ws/stock/${stockId}`);
+    
+    ws.onopen = () => {
+      console.log('WebSocket Connected');
     };
-
-    wsRef.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    wsRef.current.onclose = (event) => {
-      console.log('WebSocket connection closed:', event);
-    };
-
-    wsRef.current.onmessage = (event) => {
-      console.log('Received WebSocket data:', event.data);
-      try {
-        const dataArray = JSON.parse(event.data);
-        if (!Array.isArray(dataArray) || dataArray.length === 0) {
-          console.log('Invalid data received');
-          return;
+    
+    ws.onmessage = (event) => {
+      const newData = JSON.parse(event.data);
+      setData(prevData => {
+        const updatedData = [...prevData];
+        // Update or add new candle data
+        const lastCandle = updatedData[updatedData.length - 1];
+        if (lastCandle && isSameTimeframe(lastCandle.timestamp, newData.timestamp)) {
+          // Update existing candle
+          lastCandle.high = Math.max(lastCandle.high, newData.currentPrice);
+          lastCandle.low = Math.min(lastCandle.low, newData.currentPrice);
+          lastCandle.close = newData.currentPrice;
+          lastCandle.volume += newData.contingentVol;
+        } else {
+          // Add new candle
+          updatedData.push({
+            time: new Date(newData.timestamp).toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            open: newData.currentPrice,
+            high: newData.currentPrice,
+            low: newData.currentPrice,
+            close: newData.currentPrice,
+            volume: newData.contingentVol,
+            timestamp: newData.timestamp
+          });
         }
+        return updatedData;
+      });
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket Disconnected');
+      setTimeout(connectWebSocket, 3000);
+    };
+    
+    wsRef.current = ws;
+  };
 
-        const latestData = JSON.parse(dataArray[dataArray.length - 1]);
-        console.log('Parsed latest data:', latestData);
-        
-        const now = new Date();
-        const timeframeMins = timeframe.minutes;
-        const currentMinuteBlock = Math.floor(now.getMinutes() / timeframeMins) * timeframeMins;
-        
-        const newCandle = {
-          time: now.toLocaleTimeString('ko-KR', { 
+  const isSameTimeframe = (timestamp1, timestamp2) => {
+    const date1 = new Date(timestamp1);
+    const date2 = new Date(timestamp2);
+    const timeDiff = Math.abs(date1 - date2);
+    return timeDiff < timeframe.minutes * 60000;
+  };
+
+  // MySQL 데이터를 분봉 데이터로 변환
+  const processStockData = (stockData) => {
+    const groupedData = new Map();
+
+    stockData.forEach(item => {
+      const date = new Date(item.time);
+      const minuteKey = Math.floor(date.getTime() / (timeframe.minutes * 60000));
+
+      if (!groupedData.has(minuteKey)) {
+        groupedData.set(minuteKey, {
+          time: date.toLocaleTimeString('ko-KR', { 
             hour: '2-digit', 
             minute: '2-digit' 
           }),
-          open: parseFloat(latestData.openPrice),
-          high: parseFloat(latestData.highPrice),
-          low: parseFloat(latestData.lowPrice),
-          close: parseFloat(latestData.currentPrice),
-          timestamp: now.getTime()
-        };
+          open: item.openPrice,
+          high: item.highPrice,
+          low: item.lowPrice,
+          close: item.currentPrice,
+          volume: item.contingentVol,
+          timestamp: date.getTime()
+        });
+      } else {
+        const current = groupedData.get(minuteKey);
+        current.high = Math.max(current.high, item.highPrice);
+        current.low = Math.min(current.low, item.lowPrice);
+        current.close = item.currentPrice;
+        current.volume += item.contingentVol;
+      }
+    });
 
-        console.log('Created new candle:', newCandle);
+    return Array.from(groupedData.values())
+      .sort((a, b) => a.timestamp - b.timestamp);
+  };
 
-        if (!currentCandle || 
-            Math.floor(new Date(currentCandle.timestamp).getMinutes() / timeframeMins) !== 
-            Math.floor(currentMinuteBlock / timeframeMins)) {
-          console.log('Creating new candle');
-          if (currentCandle) {
-            setData(prevData => {
-              const newData = [...prevData.slice(-99), currentCandle];
-              console.log('Updated data array:', newData);
-              return newData;
-            });
-          }
-          setCurrentCandle(newCandle);
-        } else {
-          console.log('Updating current candle');
-          setCurrentCandle(prev => {
-            const updated = {
-              ...prev,
-              high: Math.max(prev.high, newCandle.close),
-              low: Math.min(prev.low, newCandle.close),
-              close: newCandle.close
-            };
-            console.log('Updated current candle:', updated);
-            return updated;
-          });
+  // MySQL 데이터 로드
+  useEffect(() => {
+    const fetchStockData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/v1/stock/${stockId}/charts/${timeframe.key}`);
+        if (!response.ok) throw new Error('Failed to fetch');
+        const stockData = await response.json();
+        
+        const processedData = processStockData(stockData);
+        setData(processedData);
+
+        if (processedData.length > 0) {
+          setCurrentCandle(processedData[processedData.length - 1]);
         }
       } catch (error) {
-        console.error('Error processing WebSocket message:', error);
+        console.error('Error fetching stock data:', error);
       }
     };
 
+    if (stockId) {
+      fetchStockData();
+    }
+  }, [stockId, timeframe]);
+
+  // WebSocket 연결
+  useEffect(() => {
+    connectWebSocket();
+    
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -201,6 +175,7 @@ const StockChart = ({ stockId }) => {
     };
   }, [stockId, timeframe]);
 
+  // 이동평균선 계산
   const calculateMA = (data, period) => {
     return data.map((_, index) => {
       const start = Math.max(0, index - period + 1);
@@ -209,21 +184,16 @@ const StockChart = ({ stockId }) => {
     });
   };
 
+  // 차트 생성 및 업데이트
   useEffect(() => {
-    if (!chartRef.current || !data) return;
-    console.log('Updating chart...');
+    if (!chartRef.current || !data || data.length === 0) return;
 
     const ctx = chartRef.current.getContext('2d');
-
     if (chartInstance.current) {
       chartInstance.current.destroy();
     }
 
-    const allData = currentCandle ? [...data, currentCandle] : data;
-    const recentData = allData.slice(-100);
-    
-    console.log('Chart data:', recentData);
-    
+    const recentData = data.slice(-100);
     const chartData = recentData.map(d => ({
       x: d.time,
       o: d.open,
@@ -398,22 +368,22 @@ const StockChart = ({ stockId }) => {
         chartInstance.current.destroy();
       }
     };
-  }, [data, currentCandle]);
+  }, [data]);
 
   return (
-    <ChartWrapper>
-      <TimeframeContainer>
+    <S.ChartWrapper>
+      <S.TimeframeContainer>
         {TIMEFRAMES.map((tf) => (
-          <TimeButton
+          <S.TimeButton
             key={tf.key}
             active={timeframe.key === tf.key}
             onClick={() => setTimeframe(tf)}
           >
             {tf.label}
-          </TimeButton>
+          </S.TimeButton>
         ))}
-      </TimeframeContainer>
-      <CanvasContainer ref={containerRef}>
+      </S.TimeframeContainer>
+      <S.CanvasContainer ref={containerRef}>
         <canvas 
           ref={chartRef}
           style={{ 
@@ -421,8 +391,8 @@ const StockChart = ({ stockId }) => {
             height: '100%'
           }}
         />
-      </CanvasContainer>
-    </ChartWrapper>
+      </S.CanvasContainer>
+    </S.ChartWrapper>
   );
 };
 

@@ -82,7 +82,7 @@ const IndexChart = ({ name, isKospi = true }) => {
     let ws = null;
   
     const connectWebSocket = () => {
-      ws = new WebSocket('ws://localhost:8080/ws/stock-index');
+      ws = new WebSocket('ws://ops.koreainvestment.com:21000');
       
       ws.onopen = () => {
         console.log('WebSocket Connected');
