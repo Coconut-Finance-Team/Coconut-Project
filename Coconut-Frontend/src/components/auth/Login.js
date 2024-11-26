@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import styled from 'styled-components';
 import logo from '../../assets/logo.png';
 import googleLoginBtn from '../../assets/google.png';
@@ -163,13 +162,14 @@ function Login({ setUser }) {
         
         if (userResponse.ok) {
           const userData = await userResponse.json();
-          console.log('사용자 정보:', userData); // 응답 데이터 확인
+          console.log('사용자 정보:', userData);
           
           setUser({
             username: userData.username
           });
           
-          alert('로그인 성공!');
+          // 사용자 이름을 포함한 환영 메시지 표시
+          alert(`${userData.username}님, 오셨군요! 환영합니다! 🌴`);
           navigate('/');
         } else {
           console.error('사용자 정보 가져오기 실패');
@@ -177,22 +177,22 @@ function Login({ setUser }) {
       } else {
         const errorData = await response.json();
         console.error('로그인 실패:', errorData);
-        alert(`로그인 실패: ${errorData.message || '알 수 없는 오류'}`);
+        alert(`로그인 실패: ${errorData.message || '아이디 또는 비밀번호를 확인해주세요.'}`);
       }
     } catch (error) {
       console.error('로그인 요청 중 오류 발생:', error);
       alert('로그인 요청 중 오류가 발생했습니다.');
     }
-};
+  };
 
-const handleGoogleLogin = async () => {
-  try {
-    const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
-    window.location.href = springBootAuthUrl;
-  } catch (error) {
-    console.error("Google 로그인 중 오류 발생:", error);
-  }
-};
+  const handleGoogleLogin = async () => {
+    try {
+      const springBootAuthUrl = "http://localhost:8080/oauth2/authorization/google";
+      window.location.href = springBootAuthUrl;
+    } catch (error) {
+      console.error("Google 로그인 중 오류 발생:", error);
+    }
+  };
 
   const handleSignupClick = () => {
     navigate('/signin');

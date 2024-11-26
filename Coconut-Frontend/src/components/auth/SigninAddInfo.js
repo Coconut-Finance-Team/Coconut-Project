@@ -77,8 +77,6 @@ function SigninAddInfo() {
           </select>
         </div>
 
-        <div>{styles.inputGroup.job}</div>
-        <div>{styles.inputGroup.investmentStyle}</div>
         <button type="button" onClick={handleCompleteSignup} style={styles.verificationButton}>회원가입 완료</button>
       </form>
     </div>

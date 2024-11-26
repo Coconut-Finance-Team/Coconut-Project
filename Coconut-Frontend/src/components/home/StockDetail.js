@@ -1,47 +1,17 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import styled from 'styled-components';
 import StockChart from './StockChart';
-import skLogo from '../../assets/sk.png';
-import samsungLogo from '../../assets/samsung.png';
-import naverLogo from '../../assets/naver.png';
 
-// 가상 차트 데이터 정의
-const mockChartData = [
-  { time: '1', open: 17400, high: 17800, low: 17300, close: 17750, volume: 356971 },
-  { time: '2', open: 17750, high: 18200, low: 17600, close: 18050, volume: 423452 },
-  { time: '3', open: 18050, high: 18500, low: 17900, close: 18400, volume: 512345 },
-  { time: '4', open: 18400, high: 18600, low: 18000, close: 18100, volume: 602345 },
-  { time: '5', open: 18100, high: 18300, low: 17800, close: 17950, volume: 669234 },
-];
+// Stock data for development
+const mockStockData = {
+  '005930': { name: '삼성전자', price: 72000, code: '005930' },
+  '000660': { name: 'SK하이닉스', price: 83000, code: '000660' },
+  '035420': { name: '네이버', price: 192000, code: '035420' }
+};
 
-// 매도 호가 데이터
-const mockAskPrices = [
-  { price: 84300, quantity: 2358 },
-  { price: 84200, quantity: 1567 },
-  { price: 84100, quantity: 3242 },
-  { price: 84000, quantity: 4521 },
-  { price: 83900, quantity: 2876 },
-];
-
-// 매수 호가 데이터
-const mockBidPrices = [
-  { price: 83800, quantity: 3654 },
-  { price: 83700, quantity: 2987 },
-  { price: 83600, quantity: 1876 },
-  { price: 83500, quantity: 2543 },
-  { price: 83400, quantity: 1932 },
-];
-
-// 체결 내역 데이터
-const mockTradeData = [
-  { price: 84000, quantity: 121, change: 1.98, volume: 1873750, time: '13:37:12' },
-  { price: 83900, quantity: 235, change: 1.86, volume: 1873629, time: '13:37:08' },
-  { price: 83900, quantity: 95, change: 1.86, volume: 1873394, time: '13:37:05' },
-  { price: 84000, quantity: 178, change: 1.98, volume: 1873299, time: '13:37:01' },
-  { price: 83800, quantity: 324, change: 1.74, volume: 1873121, time: '13:36:58' },
-];
-
+// Styled Components
 const Container = styled.div`
   display: flex;
   gap: 20px;
@@ -90,13 +60,6 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
-`;
-
-const StockLogo = styled.img`
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
 `;
 
 const StockInfo = styled.div`
@@ -156,46 +119,6 @@ const ChartContainer = styled.div`
   }
 `;
 
-const TableContainer = styled.div`
-  margin-top: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  padding: 16px;
-`;
-
-const TableHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-`;
-
-const DataTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-const Th = styled.th`
-  text-align: ${(props) => props.align || 'left'};
-  padding: 12px 8px;
-  color: #8b95a1;
-  font-weight: 400;
-  font-size: 13px;
-`;
-
-const Td = styled.td`
-  padding: 12px 8px;
-  font-size: 14px;
-  color: ${(props) => props.color || '#333'};
-  text-align: ${(props) => props.align || 'left'};
-  border-top: 1px solid #f2f2f2;
-`;
-
 const OrderTypeContainer = styled.div`
   display: flex;
   background: #F2F4F6;
@@ -240,7 +163,7 @@ const PriceTypeContainer = styled.div`
 `;
 
 const PriceInput = styled.div`
-  width: 90%;
+  width: 100%;
   height: 48px;
   display: flex;
   align-items: center;
@@ -318,27 +241,6 @@ const QuantityInputContainer = styled.div`
   }
 `;
 
-const PercentageContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  width: 100%;
-`;
-
-const PercentButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border: 1px solid #E5E8EB;
-  border-radius: 10px;
-  background: #fff;
-  color: #333;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    background: #F8F9FA;
-  }
-`;
-
 const InfoList = styled.div`
   display: flex;
   flex-direction: column;
@@ -372,326 +274,205 @@ const OrderButton = styled.button`
   }
 `;
 
+const TableContainer = styled.div`
+  margin-top: 20px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  padding: 16px;
+`;
+
+const DataTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+
 function StockDetail() {
-  const { stockId } = useParams(); // URL에서 stockId를 받아옵니다.
-
-  // 주식 데이터 정의
-  const stocksData = {
-    skhynix: { name: 'SK하이닉스', price: 3140, logo: skLogo, code: '000660' },
-    samsung: { name: '삼성전자', price: 72000, logo: samsungLogo, code: '005930' },
-    naver: { name: '네이버', price: 702, logo: naverLogo, code: '035420' },
-  };
-
-  const stock = stocksData[stockId];
-
+  const { stockId } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [orderType, setOrderType] = useState('buy');
-  const [priceType, setPriceType] = useState('limit');
-  const [orderPrice, setOrderPrice] = useState(stock ? stock.price : 0);
+  const [orderPrice, setOrderPrice] = useState(0);
   const [quantity, setQuantity] = useState(0);
-  const [account, setAccount] = useState({
-    balance: 10000000, // 1천만원
-    stocks: {
-      [stock?.code]: {
-        quantity: 100,
-        averagePrice: 83000,
-      },
-    },
-  });
+  const [primaryAccountId, setPrimaryAccountId] = useState(null);
 
-  const currentStock = account.stocks[stock?.code] || { quantity: 0, averagePrice: 0 };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('jwtToken');
+      console.log('저장된 토큰:', token);
 
-  // 주문 가능 수량 계산
-  const getMaxQuantity = () => {
-    return orderType === 'buy'
-        ? Math.floor(account.balance / orderPrice)
-        : currentStock.quantity;
-  };
+      if (!token) {
+        console.log('토큰이 없습니다. 로그인이 필요합니다.');
+        navigate('/login');
+        return;
+      }
 
-  // 수량 변경 핸들러
-  const handleQuantityChange = (value) => {
-    const maxQty = getMaxQuantity();
-    const newQty = Math.max(0, Math.min(value, maxQty));
-    setQuantity(newQty);
-  };
+      try {
+        const response = await axios.get('http://localhost:8080/api/v1/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-  // 퍼센트 버튼 핸들러
-  const handlePercentage = (percent) => {
-    const maxQty = getMaxQuantity();
-    const newQty = Math.floor(maxQty * (percent / 100));
-    setQuantity(newQty);
-  };
+        console.log('받아온 사용자 정보:', response.data);
+        const accountId = response.data.primaryAccountId;
+        console.log('Primary Account ID:', accountId);
+        
+        if (accountId) {
+          setPrimaryAccountId(accountId);
+        } else {
+          console.log('계좌 정보가 없습니다.');
+          alert('주문을 위해서는 계좌가 필요합니다.');
+          navigate('/account');
+        }
 
-  // 주문 처리
-  const handleOrder = () => {
-    if (quantity === 0) {
+      } catch (error) {
+        console.error('사용자 정보 조회 실패:', error);
+        console.error('에러 상세:', error.response?.data);
+        if (error.response?.status === 401) {
+          console.log('토큰이 만료되었거나 유효하지 않습니다.');
+          navigate('/login');
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [navigate]);
+
+  const handleOrder = async () => {
+    if (!primaryAccountId) {
+      alert('계좌 정보가 필요합니다.');
+      return;
+    }
+
+    if (quantity <= 0) {
       alert('주문 수량을 입력해주세요.');
       return;
     }
 
-    const totalAmount = orderPrice * quantity;
-
-    if (orderType === 'buy') {
-      if (totalAmount > account.balance) {
-        alert('잔액이 부족합니다.');
-        return;
-      }
-
-      // 구매 처리
-      setAccount((prev) => {
-        const newTotalQty = currentStock.quantity + quantity;
-        const newAveragePrice =
-            (currentStock.quantity * currentStock.averagePrice + quantity * orderPrice) / newTotalQty;
-
-        return {
-          ...prev,
-          balance: prev.balance - totalAmount,
-          stocks: {
-            ...prev.stocks,
-            [stock.code]: {
-              quantity: newTotalQty,
-              averagePrice: newAveragePrice,
-            },
-          },
-        };
-      });
-
-      alert(`${quantity}주 매수 주문이 완료되었습니다.`);
-    } else if (orderType === 'sell') {
-      if (quantity > currentStock.quantity) {
-        alert('보유 수량이 부족합니다.');
-        return;
-      }
-
-      // 판매 처리
-      setAccount((prev) => {
-        const newQty = currentStock.quantity - quantity;
-
-        return {
-          ...prev,
-          balance: prev.balance + totalAmount,
-          stocks: {
-            ...prev.stocks,
-            [stock.code]: {
-              quantity: newQty,
-              averagePrice: newQty === 0 ? 0 : currentStock.averagePrice,
-            },
-          },
-        };
-      });
-
-      alert(`${quantity}주 매도 주문이 완료되었습니다.`);
+    if (orderPrice <= 0) {
+      alert('주문 가격을 입력해주세요.');
+      return;
     }
 
-    // 주문 완료 후 초기화
-    setQuantity(0);
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('jwtToken');
+      console.log('주문 시작 - Account ID:', primaryAccountId);
+
+      const orderDTO = {
+        stockName: stockId,
+        stockCode: stockId,
+        orderQuantity: Number(quantity),
+        orderPrice: Number(orderPrice),
+      };
+
+      console.log('주문 데이터:', orderDTO);
+
+      const response = await axios.post(
+        `http://localhost:8080/api/v1/${orderType}-order`,
+        orderDTO,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('주문 응답:', response.data);
+      
+      if (response.status === 200) {
+        alert(`${quantity}주 ${orderType === 'buy' ? '매수' : '매도'} 주문이 완료되었습니다.`);
+        setQuantity(0);
+      }
+    } catch (error) {
+      console.error('주문 처리 실패:', error);
+      console.error('에러 상세:', error.response?.data);
+      
+      if (error.response?.status === 400 && error.response.data.code === 'INSUFFICIENT_FUNDS') {
+        alert('잔액이 부족합니다.');
+      } else {
+        alert(error.response?.data?.message || '주문 처리 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-      <Container>
-        {stock && (
-            <>
-              <StockInfoContainer>
-                <Header>
-                  <StockLogo src={stock.logo} alt={stock.name} />
-                  <StockInfo>
-                    <StockTitle>{stock.name}</StockTitle>
-                    <StockCode>{stock.code}</StockCode>
-                  </StockInfo>
-                </Header>
-                <StockPrice>{stock.price.toLocaleString()}원</StockPrice>
-                <Tags>
-                  <Tag>차트</Tag>
-                  <Tag>호가</Tag>
-                  <Tag>종목정보</Tag>
-                </Tags>
+    <Container>
+      {!primaryAccountId ? (
+        <div>계좌 정보를 불러오는 중...</div>
+      ) : (
+        <OrderBoxContainer>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0' }}>주문하기</h3>
 
-                <ChartContainer>
-                  <StockChart stockId={stockId} />
-                </ChartContainer>
+          <OrderTypeContainer>
+            <OrderTypeButton
+              active={orderType === 'buy'}
+              onClick={() => {
+                setOrderType('buy');
+                setQuantity(0);
+              }}
+            >
+              매수
+            </OrderTypeButton>
+            <OrderTypeButton
+              active={orderType === 'sell'}
+              onClick={() => {
+                setOrderType('sell');
+                setQuantity(0);
+              }}
+            >
+              매도
+            </OrderTypeButton>
+          </OrderTypeContainer>
 
-                {/* 호가 정보 */}
-                <TableContainer>
-                  <TableHeader>
-                    <div>호가 정보</div>
-                  </TableHeader>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <DataTable style={{ width: '48%' }}>
-                      <thead>
-                      <tr>
-                        <Th>매도호가</Th>
-                        <Th align="right">잔량</Th>
-                      </tr>
-                      </thead>
-                      <tbody>
-                      {mockAskPrices.map((item, i) => (
-                          <tr key={i}>
-                            <Td
-                                color={orderPrice === item.price ? '#FF4D4D' : undefined}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setOrderPrice(item.price)}
-                            >
-                              {item.price.toLocaleString()}원
-                            </Td>
-                            <Td align="right">{item.quantity.toLocaleString()}</Td>
-                          </tr>
-                      ))}
-                      </tbody>
-                    </DataTable>
-                    <DataTable style={{ width: '48%' }}>
-                      <thead>
-                      <tr>
-                        <Th>매수호가</Th>
-                        <Th align="right">잔량</Th>
-                      </tr>
-                      </thead>
-                      <tbody>
-                      {mockBidPrices.map((item, i) => (
-                          <tr key={i}>
-                            <Td
-                                color={orderPrice === item.price ? '#FF4D4D' : undefined}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setOrderPrice(item.price)}
-                            >
-                              {item.price.toLocaleString()}원
-                            </Td>
-                            <Td align="right">{item.quantity.toLocaleString()}</Td>
-                          </tr>
-                      ))}
-                      </tbody>
-                    </DataTable>
-                  </div>
-                </TableContainer>
+          <PriceInput>
+            <input
+              type="number"
+              value={orderPrice}
+              onChange={(e) => setOrderPrice(Number(e.target.value))}
+              placeholder="주문 가격 입력"
+              min="0"
+            />
+            <span>원</span>
+          </PriceInput>
 
-                {/* 체결 내역 */}
-                <TableContainer>
-                  <TableHeader>
-                    <div>일별 · 실시간 시세</div>
-                    <div>실시간</div>
-                  </TableHeader>
-                  <DataTable>
-                    <thead>
-                    <tr>
-                      <Th>체결가</Th>
-                      <Th align="right">체결량(주)</Th>
-                      <Th align="right">등락률</Th>
-                      <Th align="right">거래량(주)</Th>
-                      <Th align="right">시간</Th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {mockTradeData.map((trade, i) => (
-                        <tr key={i}>
-                          <Td>{trade.price.toLocaleString()}원</Td>
-                          <Td align="right">{trade.quantity}</Td>
-                          <Td align="right" color={trade.change >= 0 ? '#FF4D4D' : '#4D4DFF'}>
-                            {trade.change >= 0 ? '+' : ''}
-                            {trade.change}%
-                          </Td>
-                          <Td align="right">{trade.volume.toLocaleString()}</Td>
-                          <Td align="right">{trade.time}</Td>
-                        </tr>
-                    ))}
-                    </tbody>
-                  </DataTable>
-                </TableContainer>
-              </StockInfoContainer>
+          <QuantityContainer>
+            <span>수량</span>
+            <QuantityInputContainer>
+              <button onClick={() => setQuantity(Math.max(0, quantity - 1))}>-</button>
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
+                placeholder="주문 수량 입력"
+                min="0"
+              />
+              <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            </QuantityInputContainer>
+          </QuantityContainer>
 
-              <OrderBoxContainer>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0' }}>주문하기</h3>
+          <InfoList>
+            <div>
+              <span>총 주문 금액</span>
+              <span>{(orderPrice * quantity).toLocaleString()}원</span>
+            </div>
+          </InfoList>
 
-                <OrderTypeContainer>
-                  <OrderTypeButton
-                      active={orderType === 'buy'}
-                      onClick={() => {
-                        setOrderType('buy');
-                        setQuantity(0);
-                      }}
-                  >
-                    구매
-                  </OrderTypeButton>
-                  <OrderTypeButton
-                      active={orderType === 'sell'}
-                      onClick={() => {
-                        setOrderType('sell');
-                        setQuantity(0);
-                      }}
-                  >
-                    판매
-                  </OrderTypeButton>
-                </OrderTypeContainer>
-
-                <PriceTypeContainer>
-                  <button
-                      className={priceType === 'limit' ? 'active' : ''}
-                      onClick={() => setPriceType('limit')}
-                  >
-                    지정가
-                  </button>
-                  <button
-                      className={priceType === 'market' ? 'active' : ''}
-                      onClick={() => setPriceType('market')}
-                  >
-                    시장가
-                  </button>
-                </PriceTypeContainer>
-
-                <PriceInput>
-                  <input type="text" value={orderPrice.toLocaleString()} readOnly />
-                  <span>원</span>
-                </PriceInput>
-
-                <QuantityContainer>
-                  <span>수량</span>
-                  <QuantityInputContainer>
-                    <button onClick={() => handleQuantityChange(quantity - 1)}>-</button>
-                    <input
-                        type="number"
-                        value={quantity}
-                        min="0"
-                        step="1"
-                        onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0)}
-                    />
-                    <button onClick={() => handleQuantityChange(quantity + 1)}>+</button>
-                  </QuantityInputContainer>
-                </QuantityContainer>
-
-                <PercentageContainer>
-                  <PercentButton onClick={() => handlePercentage(10)}>10%</PercentButton>
-                  <PercentButton onClick={() => handlePercentage(25)}>25%</PercentButton>
-                  <PercentButton onClick={() => handlePercentage(50)}>50%</PercentButton>
-                  <PercentButton onClick={() => handlePercentage(100)}>최대</PercentButton>
-                </PercentageContainer>
-
-                <InfoList>
-                  <div>
-                    <span>내 보유량</span>
-                    <span>{currentStock.quantity}주</span>
-                  </div>
-                  <div>
-                    <span>내 주식 평균가</span>
-                    <span>{currentStock.averagePrice.toLocaleString()}원</span>
-                  </div>
-                  <div>
-                    <span>{orderType === 'buy' ? '주문 가능 금액' : '보유 수량'}</span>
-                    <span>
-                  {orderType === 'buy'
-                      ? `${account.balance.toLocaleString()}원`
-                      : `${currentStock.quantity}주`}
-                </span>
-                  </div>
-                  <div>
-                    <span>총 주문 금액</span>
-                    <span>{(orderPrice * quantity).toLocaleString()}원</span>
-                  </div>
-                </InfoList>
-
-                <OrderButton onClick={handleOrder} buy={orderType === 'buy'}>
-                  {orderType === 'buy' ? '구매하기' : '판매하기'}
-                </OrderButton>
-              </OrderBoxContainer>
-            </>
-        )}
-      </Container>
+          <OrderButton
+            onClick={handleOrder}
+            buy={orderType === 'buy'}
+            disabled={loading}
+          >
+            {loading ? '처리중...' : orderType === 'buy' ? '매수' : '매도'}
+          </OrderButton>
+        </OrderBoxContainer>
+      )}
+    </Container>
   );
 }
 
