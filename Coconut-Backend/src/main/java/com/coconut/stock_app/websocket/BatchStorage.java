@@ -1,12 +1,13 @@
 package com.coconut.stock_app.websocket;
 
+import com.coconut.stock_app.entity.cloud.StockChart;
+import com.coconut.stock_app.repository.cloud.StockChartRepository;
+import com.coconut.stock_app.service.StockSearchService;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import com.coconut.stock_app.entity.cloud.StockChart;
-import com.coconut.stock_app.repository.cloud.StockChartRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class BatchStorage {
 
     private final StockChartRepository stockChartRepository;
+    private final StockSearchService stockSearchService;
     private final ConcurrentMap<String, List<StockChart>> stockDataMap = new ConcurrentHashMap<>();
 
     public void addStockData(String stockCode, StockChart data) {
@@ -42,11 +44,17 @@ public class BatchStorage {
                 List<StockChart> stockCharts = stockDataMap.get(stockCode);
 
                 if (stockCharts != null && !stockCharts.isEmpty()) {
-                    // MySQL로 데이터 저장
-                    stockChartRepository.saveAll(new ArrayList<>(stockCharts));
-                    log.info("MySQL 저장 완료 - 종목: {}, 저장 데이터 수: {}", stockCode, stockCharts.size());
+                    // 1. MySQL 저장
+                    List<StockChart> savedCharts = stockChartRepository.saveAll(new ArrayList<>(stockCharts));
 
-                    // BatchStorage에서 해당 종목 데이터 제거
+                    // 2. 최신 데이터로 ElasticSearch 업데이트
+                    StockChart latestChart = savedCharts.stream()
+                            .max(Comparator.comparing(StockChart::getTime))
+                            .orElseThrow();
+
+                    stockSearchService.updateSearchIndex(latestChart);
+
+                    // 3. 배치 데이터 클리어
                     clearStockData(stockCode);
                 }
             }

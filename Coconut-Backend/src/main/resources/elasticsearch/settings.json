@@ -1,0 +1,20 @@
+{
+  "index": {
+    "max_ngram_diff": 10,
+    "analysis": {
+      "analyzer": {
+        "custom_korean": {
+          "tokenizer": "nori_tokenizer",
+          "filter": ["lowercase", "trim", "nori_readingform", "ngram_filter"]
+        }
+      },
+      "filter": {
+        "ngram_filter": {
+          "type": "ngram",
+          "min_gram": 1,
+          "max_gram": 10
+        }
+      }
+    }
+  }
+}
