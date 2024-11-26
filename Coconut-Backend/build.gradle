@@ -28,9 +28,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-json'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// Spring Data Elasticsearch
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-	implementation 'co.elastic.clients:elasticsearch-java:7.17.11'
-	implementation 'jakarta.json:jakarta.json-api:2.1.1'
 
 	// Jackson for JSON Processing
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
