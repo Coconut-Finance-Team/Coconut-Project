@@ -1,0 +1,18 @@
+{
+  "mappings": {
+    "properties": {
+      "stockCode": {
+        "type": "keyword"
+      },
+      "stockName": {
+        "type": "text",
+        "analyzer": "custom_korean",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

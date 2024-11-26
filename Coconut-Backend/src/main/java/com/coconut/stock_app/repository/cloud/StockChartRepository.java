@@ -16,4 +16,8 @@ public interface StockChartRepository extends JpaRepository<StockChart, Long> {
     List<StockChart> findByStockCodeAndTimeRange(@Param("stockCode") String stockCode,
                                                  @Param("startTime") LocalDateTime startTime);
 
+    // 각 종목별 최신 차트 데이터 조회
+    @Query("SELECT sc FROM StockChart sc WHERE sc.time = (" +
+            "SELECT MAX(sc2.time) FROM StockChart sc2 WHERE sc2.stock.stockCode = sc.stock.stockCode)")
+    List<StockChart> findLatestChartForEachStock();
 }
