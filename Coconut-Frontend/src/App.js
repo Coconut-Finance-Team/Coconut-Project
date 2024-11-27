@@ -55,28 +55,35 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Homeboard />} />
-            <Route path="/account/*" element={<Account />} />
-            <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
-            <Route path="/subscription/*" element={<Subscription />} />
-            <Route path="/subscription/apply/:id" element={<SubscriptionApply />} />
+            <Route
+              path="/account/*"
+              element={<Account user={user} setUser={setUser} />}
+            />
+
+            {/* Subscription 관련 라우트 정리 */}
             <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
-            <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
-            <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+<Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+<Route path="/subscription/apply" element={<SubscriptionApply />} />
+<Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+<Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
+<Route path="/subscription/*" element={<Subscription />} />
+
+            {/* Auth 관련 라우트 */}
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/signin" element={<Signin />} />
             <Route path="/signup/userinfo" element={<SigninUserInfo />} />
             <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
             <Route path="/findidpassword" element={<FindIdPassword />} />
             <Route path="/chart" element={<RealTimeChart />} />
-            
+
             {/* 주식 상세 페이지 라우트 */}
             <Route path="/stock/:stockId" element={<StockDetail />} />
             {/* /stock으로 시작하는 기존 URL을 /stocks로 리다이렉트 */}
-            <Route 
-              path="/stock/:stockId" 
-              element={<Navigate to={location => `/stock/${location.pathname.split('/')[2]}`} replace />} 
+            <Route
+              path="/stock/:stockId"
+              element={<Navigate to={location => `/stock/${location.pathname.split('/')[2]}`} replace />}
             />
-            
+
             <Route path="/chart/kospi" element={<KospiChart />} />
             <Route path="/chart/kosdaq" element={<KosdaqChart />} />
             <Route path="/search" element={<SearchPage />} />

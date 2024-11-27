@@ -1,309 +1,479 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid
-} from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import styled from 'styled-components';
+import StockChart from './StockChart';
 
-const ChartContainer = styled.div`
-  width: 100%;
-  height: 400px;
-  position: relative;
-`;
+// Stock data for development
+const mockStockData = {
+  '005930': { name: '삼성전자', price: 72000, code: '005930' },
+  '000660': { name: 'SK하이닉스', price: 83000, code: '000660' },
+  '035420': { name: '네이버', price: 192000, code: '035420' }
+};
 
-const TimeframeContainer = styled.div`
+// Styled Components
+const Container = styled.div`
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  align-items: center;
-`;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 16px;
+  font-family: 'Noto Sans KR', sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
 
-const TimeButton = styled.button`
-  padding: 6px 12px;
-  border: 1px solid ${props => props.active ? '#1890ff' : '#d9d9d9'};
-  background: ${props => props.active ? '#1890ff' : '#ffffff'};
-  color: ${props => props.active ? '#ffffff' : '#666666'};
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #1890ff;
-    color: ${props => props.active ? '#ffffff' : '#1890ff'};
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 8px;
+    gap: 12px;
   }
 `;
 
-const CustomTooltipContainer = styled.div`
-  background: rgba(0, 0, 0, 0.8);
-  border-radius: 4px;
-  padding: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  color: white;
+const StockInfoContainer = styled.div`
+  flex: 3;
+  background: #ffffff;
+  border: 1px solid #f2f2f2;
+  border-radius: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
-const TooltipRow = styled.div`
-  margin: 4px 0;
-  font-size: 12px;
+const OrderBoxContainer = styled.div`
+  flex: 1;
+  min-width: 320px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px 20px;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 16px;
+  color: #333;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.08);
 `;
 
-const StockChart = ({ stockId }) => {
-  const [timeframe, setTimeframe] = useState('1min');
-  const [chartData, setChartData] = useState([]);
-  const wsRef = useRef(null);
-  const [basePrice, setBasePrice] = useState(null);
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const StockInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const StockTitle = styled.h2`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+`;
+
+const StockCode = styled.span`
+  font-size: 14px;
+  color: #8b95a1;
+`;
+
+const StockPrice = styled.div`
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin: 16px 0;
+`;
+
+const Tags = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const Tag = styled.span`
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: #f2f2f2;
+  border-radius: 12px;
+  color: #8b95a1;
+`;
+
+const ChartContainer = styled.div`
+  width: 100%;
+  height: 450px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 20px 0;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    height: 350px;
+    padding: 8px;
+  }
+`;
+
+const OrderTypeContainer = styled.div`
+  display: flex;
+  background: #F2F4F6;
+  border-radius: 14px;
+  padding: 4px;
+  height: 48px;
+`;
+
+const OrderTypeButton = styled.button`
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  background: ${(props) => (props.active ? '#fff' : 'transparent')};
+  color: ${(props) => (props.active ? '#333' : '#8B95A1')};
+  cursor: pointer;
+  box-shadow: ${(props) => (props.active ? '0px 1px 3px rgba(0, 0, 0, 0.1)' : 'none')};
+  transition: all 0.2s ease;
+`;
+
+const PriceTypeContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  width: 100%;
+
+  button {
+    flex: 1;
+    height: 48px;
+    padding: 0;
+    border: none;
+    border-radius: 14px;
+    background: #F2F4F6;
+    font-size: 15px;
+    color: #8B95A1;
+    cursor: pointer;
+
+    &.active {
+      color: #333;
+    }
+  }
+`;
+
+const PriceInput = styled.div`
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  background: #F2F4F6;
+  border-radius: 14px;
+  padding: 0 16px;
+
+  input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    text-align: right;
+    color: #333;
+    
+    &:focus {
+      outline: none;
+    }
+  }
+
+  span {
+    color: #333;
+    margin-left: 4px;
+  }
+`;
+
+const QuantityContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+
+  span {
+    font-size: 15px;
+    color: #333;
+    min-width: 40px;
+  }
+`;
+
+const QuantityInputContainer = styled.div`
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  background: #F2F4F6;
+  border-radius: 14px;
+  padding: 0 8px;
+
+  input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    text-align: right;
+    color: #333;
+    padding: 0 8px;
+    
+    &:focus {
+      outline: none;
+    }
+  }
+
+  button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #8B95A1;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+const InfoList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #F2F4F6;
+  border-bottom: 1px solid #F2F4F6;
+  
+  div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #666;
+  }
+`;
+
+const OrderButton = styled.button`
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: ${(props) => (props.buy ? '#FF4D4D' : '#4D4DFF')};
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: ${(props) => (props.buy ? '#FF3B3B' : '#3B4DFF')};
+  }
+`;
+
+const TableContainer = styled.div`
+  margin-top: 20px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  padding: 16px;
+`;
+
+const DataTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+
+function StockDetail() {
+  const { stockId } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [orderType, setOrderType] = useState('buy');
+  const [orderPrice, setOrderPrice] = useState(0);
+  const [quantity, setQuantity] = useState(0);
+  const [primaryAccountId, setPrimaryAccountId] = useState(null);
 
   useEffect(() => {
-    const fetchHistoricalData = async () => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('jwtToken');
+      console.log('저장된 토큰:', token);
+
+      if (!token) {
+        console.log('토큰이 없습니다. 로그인이 필요합니다.');
+        navigate('/login');
+        return;
+      }
+
       try {
-        const response = await fetch(
-          `http://localhost:8080/api/v1/stock/${stockId}/charts/${timeframe}`
-        );
-        const data = await response.json();
+        const response = await axios.get('http://localhost:8080/api/v1/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        const formattedData = data.map(item => ({
-          time: new Date(item.time).toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          price: item.currentPrice,
-          open: item.openPrice,
-          high: item.highPrice,
-          low: item.lowPrice,
-          volume: item.contingentVol,
-          accVolume: item.accumulatedVol,
-          amount: item.accumulatedAmount
-        }));
-
-        if (formattedData.length > 0) {
-          setBasePrice(formattedData[0].price);
+        console.log('받아온 사용자 정보:', response.data);
+        const accountId = response.data.primaryAccountId;
+        console.log('Primary Account ID:', accountId);
+        
+        if (accountId) {
+          setPrimaryAccountId(accountId);
+        } else {
+          console.log('계좌 정보가 없습니다.');
+          alert('주문을 위해서는 계좌가 필요합니다.');
+          navigate('/account');
         }
 
-        setChartData(formattedData);
       } catch (error) {
-        console.error('Historical data fetch error:', error);
+        console.error('사용자 정보 조회 실패:', error);
+        console.error('에러 상세:', error.response?.data);
+        if (error.response?.status === 401) {
+          console.log('토큰이 만료되었거나 유효하지 않습니다.');
+          navigate('/login');
+        }
       }
     };
 
-    fetchHistoricalData();
+    fetchUserData();
+  }, [navigate]);
 
-    // WebSocket 연결
-    wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${stockId}`);
-
-    wsRef.current.onopen = () => {
-      console.log('WebSocket Connected');
-    };
-
-    wsRef.current.onmessage = (event) => {
-      try {
-        const newData = JSON.parse(event.data);
-        
-        const formattedTime = newData.time.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3');
-        
-        setChartData(prevData => {
-          const newPoint = {
-            time: formattedTime,
-            price: newData.currentPrice,
-            open: newData.openPrice,
-            high: newData.highPrice,
-            low: newData.lowPrice,
-            volume: newData.contingentVol,
-            accVolume: newData.accumulatedVol,
-            amount: newData.accumulatedAmount
-          };
-
-          const updatedData = [...prevData, newPoint].slice(-100);
-          return updatedData;
-        });
-      } catch (error) {
-        console.error('WebSocket data processing error:', error);
-      }
-    };
-
-    wsRef.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    wsRef.current.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [stockId, timeframe]);
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const priceChange = basePrice ? ((data.price - basePrice) / basePrice) * 100 : 0;
-      
-      return (
-        <CustomTooltipContainer>
-          <TooltipRow>
-            <span>시간</span>
-            <span>{data.time}</span>
-          </TooltipRow>
-          <TooltipRow>
-            <span>현재가</span>
-            <span>{data.price.toLocaleString()}원</span>
-          </TooltipRow>
-          <TooltipRow>
-            <span>등락률</span>
-            <span className={priceChange >= 0 ? 'text-red-500' : 'text-blue-500'}>
-              {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
-            </span>
-          </TooltipRow>
-          <TooltipRow>
-            <span>거래량</span>
-            <span>{data.volume.toLocaleString()}</span>
-          </TooltipRow>
-        </CustomTooltipContainer>
-      );
+  const handleOrder = async () => {
+    if (!primaryAccountId) {
+      alert('계좌 정보가 필요합니다.');
+      return;
     }
-    return null;
+
+    if (quantity <= 0) {
+      alert('주문 수량을 입력해주세요.');
+      return;
+    }
+
+    if (orderPrice <= 0) {
+      alert('주문 가격을 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('jwtToken');
+      console.log('주문 시작 - Account ID:', primaryAccountId);
+
+      const orderDTO = {
+        stockName: stockId,
+        stockCode: stockId,
+        orderQuantity: Number(quantity),
+        orderPrice: Number(orderPrice),
+      };
+
+      console.log('주문 데이터:', orderDTO);
+
+      const response = await axios.post(
+        `http://localhost:8080/api/v1/${orderType}-order`,
+        orderDTO,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('주문 응답:', response.data);
+      
+      if (response.status === 200) {
+        alert(`${quantity}주 ${orderType === 'buy' ? '매수' : '매도'} 주문이 완료되었습니다.`);
+        setQuantity(0);
+      }
+    } catch (error) {
+      console.error('주문 처리 실패:', error);
+      console.error('에러 상세:', error.response?.data);
+      
+      if (error.response?.status === 400 && error.response.data.code === 'INSUFFICIENT_FUNDS') {
+        alert('잔액이 부족합니다.');
+      } else {
+        alert(error.response?.data?.message || '주문 처리 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <TimeframeContainer>
-        <TimeButton
-          active={timeframe === '1min'}
-          onClick={() => setTimeframe('1min')}
-        >
-          1분
-        </TimeButton>
-        <TimeButton
-          active={timeframe === '10min'}
-          onClick={() => setTimeframe('10min')}
-        >
-          10분
-        </TimeButton>
-      </TimeframeContainer>
+    <Container>
+      {!primaryAccountId ? (
+        <div>계좌 정보를 불러오는 중...</div>
+      ) : (
+        <OrderBoxContainer>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0' }}>주문하기</h3>
 
-      <ChartContainer>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-          >
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              vertical={false}
-              opacity={0.3}
-            />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 12, fill: '#666' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              yAxisId="price"
-              orientation="right"
-              domain={['auto', 'auto']}
-              tick={{ fontSize: 12, fill: '#666' }}
-              axisLine={false}
-              tickLine={false}
-              width={60}
-              padding={{ top: 30, bottom: 30 }}
-            />
-            <YAxis
-              yAxisId="volume"
-              orientation="left"
-              domain={[0, 'auto']}
-              hide={true}
-            />
-            <Tooltip 
-              content={<CustomTooltip />}
-              cursor={{
-                stroke: '#666',
-                strokeDasharray: '5 5',
-                strokeWidth: 1
+          <OrderTypeContainer>
+            <OrderTypeButton
+              active={orderType === 'buy'}
+              onClick={() => {
+                setOrderType('buy');
+                setQuantity(0);
               }}
-            />
-            <Line
-              yAxisId="price"
-              type="monotone"
-              dataKey="price"
-              stroke="#ff4747"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Bar
-              yAxisId="volume"
-              dataKey="volume"
-              fill="#e3f2fd"
-              opacity={0.5}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+            >
+              매수
+            </OrderTypeButton>
+            <OrderTypeButton
+              active={orderType === 'sell'}
+              onClick={() => {
+                setOrderType('sell');
+                setQuantity(0);
+              }}
+            >
+              매도
+            </OrderTypeButton>
+          </OrderTypeContainer>
 
-      {/* 거래 정보 표시 */}
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        {chartData.length > 0 && (
-          <>
-            <div className="border rounded p-3">
-              <div className="text-sm text-gray-500">거래대금</div>
-              <div className="text-lg font-semibold">
-                {(chartData[chartData.length - 1].amount / 1000000).toFixed(0)}백만
-              </div>
-            </div>
-            <div className="border rounded p-3">
-              <div className="text-sm text-gray-500">누적거래량</div>
-              <div className="text-lg font-semibold">
-                {chartData[chartData.length - 1].accVolume.toLocaleString()}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          <PriceInput>
+            <input
+              type="number"
+              value={orderPrice}
+              onChange={(e) => setOrderPrice(Number(e.target.value))}
+              placeholder="주문 가격 입력"
+              min="0"
+            />
+            <span>원</span>
+          </PriceInput>
 
-      {/* 가격 정보 표시 */}
-      {chartData.length > 0 && (
-        <div className="mt-4 grid grid-cols-4 gap-4">
-          <div className="border rounded p-3">
-            <div className="text-sm text-gray-500">시가</div>
-            <div className="text-lg font-semibold">
-              {chartData[chartData.length - 1].open.toLocaleString()}
+          <QuantityContainer>
+            <span>수량</span>
+            <QuantityInputContainer>
+              <button onClick={() => setQuantity(Math.max(0, quantity - 1))}>-</button>
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
+                placeholder="주문 수량 입력"
+                min="0"
+              />
+              <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            </QuantityInputContainer>
+          </QuantityContainer>
+
+          <InfoList>
+            <div>
+              <span>총 주문 금액</span>
+              <span>{(orderPrice * quantity).toLocaleString()}원</span>
             </div>
-          </div>
-          <div className="border rounded p-3">
-            <div className="text-sm text-gray-500">고가</div>
-            <div className="text-lg font-semibold text-red-500">
-              {chartData[chartData.length - 1].high.toLocaleString()}
-            </div>
-          </div>
-          <div className="border rounded p-3">
-            <div className="text-sm text-gray-500">저가</div>
-            <div className="text-lg font-semibold text-blue-500">
-              {chartData[chartData.length - 1].low.toLocaleString()}
-            </div>
-          </div>
-          <div className="border rounded p-3">
-            <div className="text-sm text-gray-500">현재가</div>
-            <div className="text-lg font-semibold">
-              {chartData[chartData.length - 1].price.toLocaleString()}
-            </div>
-          </div>
-        </div>
+          </InfoList>
+
+          <OrderButton
+            onClick={handleOrder}
+            buy={orderType === 'buy'}
+            disabled={loading}
+          >
+            {loading ? '처리중...' : orderType === 'buy' ? '매수' : '매도'}
+          </OrderButton>
+        </OrderBoxContainer>
       )}
-    </div>
+    </Container>
   );
-};
+}
 
-export default StockChart;
+export default StockDetail;
