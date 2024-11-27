@@ -114,46 +114,6 @@ export const ChartContainer = styled.div`
   }
 `;
 
-export const TableContainer = styled.div`
-  margin-top: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  padding: 16px;
-`;
-
-export const TableHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-`;
-
-export const DataTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-export const Th = styled.th`
-  text-align: ${props => props.align || 'left'};
-  padding: 12px 8px;
-  color: #8b95a1;
-  font-weight: 400;
-  font-size: 13px;
-`;
-
-export const Td = styled.td`
-  padding: 12px 8px;
-  font-size: 14px;
-  color: ${props => props.color || '#333'};
-  text-align: ${props => props.align || 'left'};
-  border-top: 1px solid #f2f2f2;
-`;
-
 export const OrderTypeContainer = styled.div`
   display: flex;
   background: #F2F4F6;
@@ -175,25 +135,25 @@ export const OrderTypeButton = styled.button`
   transition: all 0.2s ease;
 `;
 
-export const PriceTypeContainer = styled.div`
+export const TimeframeButtons = styled.div`
   display: flex;
   gap: 8px;
-  width: 100%;
+  margin-bottom: 16px;
+`;
 
-  button {
-    flex: 1;
-    height: 48px;
-    padding: 0;
-    border: none;
-    border-radius: 14px;
-    background: #F2F4F6;
-    font-size: 15px;
-    color: #8B95A1;
-    cursor: pointer;
+export const TimeButton = styled.button`
+  padding: 8px 16px;
+  border: 1px solid ${props => props.active ? '#1890ff' : '#d9d9d9'};
+  background: ${props => props.active ? '#1890ff' : '#ffffff'};
+  color: ${props => props.active ? '#ffffff' : '#666666'};
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
 
-    &.active {
-      color: #333;
-    }
+  &:hover {
+    border-color: #1890ff;
+    color: ${props => props.active ? '#ffffff' : '#1890ff'};
   }
 `;
 
@@ -261,18 +221,6 @@ export const QuantityInputContainer = styled.div`
     &:focus {
       outline: none;
     }
-
-    /* Chrome, Safari, Edge, Opera */
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    /* Firefox */
-    &[type=number] {
-      -moz-appearance: textfield;
-    }
   }
 
   button {
@@ -286,27 +234,6 @@ export const QuantityInputContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-`;
-
-export const PercentageContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  width: 100%;
-`;
-
-export const PercentButton = styled.button`
-  flex: 1;
-  height: 48px;
-  border: 1px solid #E5E8EB;
-  border-radius: 10px;
-  background: #fff;
-  color: #333;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    background: #F8F9FA;
   }
 `;
 
@@ -343,17 +270,32 @@ export const OrderButton = styled.button`
   }
 `;
 
-export const ErrorMessage = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  min-height: 200px;
-  padding: 20px;
-  background-color: #fff;
+export const TableContainer = styled.div`
+  margin-top: 20px;
+  background-color: #f8f8f8;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  color: #ff4d4d;
-  font-size: 16px;
-  text-align: center;
+  padding: 16px;
+`;
+
+export const DataTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+export const Th = styled.th`
+  text-align: ${props => props.align || 'left'};
+  padding: 12px 8px;
+  color: #8b95a1;
+  font-weight: 400;
+  font-size: 13px;
+  vertical-align: middle;
+`;
+
+export const Td = styled.td`
+  padding: 12px 8px;
+  font-size: 14px;
+  color: ${props => props.color || '#333'};
+  text-align: ${props => props.align || 'left'};
+  border-top: 1px solid #f2f2f2;
+  vertical-align: middle;
 `;

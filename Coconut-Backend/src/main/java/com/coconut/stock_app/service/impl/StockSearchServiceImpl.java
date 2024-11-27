@@ -23,7 +23,7 @@ public class StockSearchServiceImpl implements StockSearchService {
     private final StockSearchRepository searchRepository;
     private final StockChartRepository stockChartRepository;
 
-    @PostConstruct
+    //@PostConstruct
     @Override
     public void initializeSearchIndex() {
         try {

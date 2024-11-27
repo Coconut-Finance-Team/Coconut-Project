@@ -342,7 +342,7 @@ function MarketChart() {
       </Header>
 
       <TimeframeButtons>
-        <TimeButton active={true}>1분</TimeButton>
+        <TimeButton active={true}>실시간</TimeButton>
       </TimeframeButtons>
 
       <ChartContainer ref={chartRef}>
