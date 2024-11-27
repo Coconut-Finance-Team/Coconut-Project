@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/stocks")
+@RequestMapping("/api/v1/stock")
 @RequiredArgsConstructor
 @Slf4j
 public class StockChartController {

@@ -17,8 +17,7 @@ import SigninAddInfo from './components/auth/SigninAddInfo';
 import FindIdPassword from './components/auth/FindIdPassword';
 import RealTimeChart from './components/home/RealTimeChart';
 import StockDetail from './components/home/StockDetail';
-import KospiChart from './components/home/KospiChart';
-import KosdaqChart from './components/home/KosdaqChart';
+import MarketChart from './components/home/MarketChart';
 import SearchPage from './components/common/SearchPage';
 import AdminPage from './components/admin/AdminPage';
 import MyPage from './components/mypage';
@@ -59,14 +58,14 @@ function App() {
               path="/account/*"
               element={<Account user={user} setUser={setUser} />}
             />
-            
+
             {/* Subscription 관련 라우트 정리 */}
             <Route path="/subscription/apply/confirm" element={<SubscriptionConfirm />} />
-<Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
-<Route path="/subscription/apply" element={<SubscriptionApply />} />
-<Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
-<Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
-<Route path="/subscription/*" element={<Subscription />} />
+            <Route path="/subscription/apply/complete" element={<SubscriptionComplete />} />
+            <Route path="/subscription/apply" element={<SubscriptionApply />} />
+            <Route path="/subscription/inquiry" element={<SubscriptionInquiry />} />
+            <Route path="/subscription" element={<Navigate to="/subscription/table" replace />} />
+            <Route path="/subscription/*" element={<Subscription />} />
 
             {/* Auth 관련 라우트 */}
             <Route path="/login" element={<Login setUser={setUser} />} />
@@ -74,14 +73,20 @@ function App() {
             <Route path="/signup/userinfo" element={<SigninUserInfo />} />
             <Route path="/signup/signinaddinfo" element={<SigninAddInfo />} />
             <Route path="/findidpassword" element={<FindIdPassword />} />
-
-            {/* Chart 관련 라우트 */}
             <Route path="/chart" element={<RealTimeChart />} />
-            <Route path="/chart/kospi" element={<KospiChart />} />
-            <Route path="/chart/kosdaq" element={<KosdaqChart />} />
-            <Route path="/stock/:stockId" element={<StockDetail />} />
 
-            {/* 기타 라우트 */}
+            {/* 주식 상세 페이지 라우트 */}
+            <Route path="/stock/:stockId" element={<StockDetail />} />
+            {/* /stock으로 시작하는 기존 URL을 /stocks로 리다이렉트 */}
+            <Route
+              path="/stock/:stockId"
+              element={<Navigate to={location => `/stock/${location.pathname.split('/')[2]}`} replace />}
+            />
+
+            {/* MarketChart로 변경된 코스피/코스닥 차트 라우트 */}
+            <Route path="/chart/kospi" element={<MarketChart />} />
+            <Route path="/chart/kosdaq" element={<MarketChart />} />
+            
             <Route path="/search" element={<SearchPage />} />
             <Route path="/mypage" element={<MyPage user={user} />} />
           </Routes>

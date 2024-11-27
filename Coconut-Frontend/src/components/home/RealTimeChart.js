@@ -151,10 +151,43 @@ const RealTimeChart = () => {
   };
 
   const volumeStocks = [
-    { id: 'skhynix', rank: 1, name: 'SK하이닉스', image: skImage, price: 33250, change: 5450, changePercent: 19.6, volume: '15억원', shares: '1,546,379주' },
-    { id: 'samsung', rank: 2, name: '삼성전자', image: samsungImage, price: 58000, change: 700, changePercent: 1.2, volume: '13억원', shares: '1,223,055주' },
-    { id: 'naver', rank: 3, name: '네이버', image: naverImage, price: 10750, change: 1050, changePercent: 10.8, volume: '6.2억원', shares: '858,274주' },
- ];
+    { 
+      id: 'skhynix', 
+      code: '000660',  // 종목코드 추가
+      rank: 1, 
+      name: 'SK하이닉스', 
+      image: skImage, 
+      price: 33250, 
+      change: 5450, 
+      changePercent: 19.6, 
+      volume: '15억원', 
+      shares: '1,546,379주' 
+    },
+    { 
+      id: 'samsung', 
+      code: '005930',  // 종목코드 추가
+      rank: 2, 
+      name: '삼성전자', 
+      image: samsungImage, 
+      price: 58000, 
+      change: 700, 
+      changePercent: 1.2, 
+      volume: '13억원', 
+      shares: '1,223,055주' 
+    },
+    { 
+      id: 'naver', 
+      code: '035420',  // 종목코드 추가
+      rank: 3, 
+      name: '네이버', 
+      image: naverImage, 
+      price: 10750, 
+      change: 1050, 
+      changePercent: 10.8, 
+      volume: '6.2억원', 
+      shares: '858,274주' 
+    },
+  ];
 
   const risingStocks = [
     { id: 'kumho', rank: 1, name: '금호건설우', image: kumhoImage, price: 9710, change: 2240, changePercent: 29.9, volume: '1.5억원', shares: '15,416주' },
@@ -182,7 +215,7 @@ const RealTimeChart = () => {
   };
 
   const handleStockClick = (stock) => {
-    navigate(`/stock/${stock.id}`, { state: { stock } });
+    navigate(`/stock/${stock.code}`, { state: { stock } });
   };
 
   return (

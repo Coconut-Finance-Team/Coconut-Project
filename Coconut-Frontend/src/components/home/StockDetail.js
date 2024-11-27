@@ -1,346 +1,406 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import styled from 'styled-components';
-import StockChart from './StockChart';
-
-// Stock data for development
-const mockStockData = {
-  '005930': { name: '삼성전자', price: 72000, code: '005930' },
-  '000660': { name: 'SK하이닉스', price: 83000, code: '000660' },
-  '035420': { name: '네이버', price: 192000, code: '035420' }
-};
-
-// Styled Components
-const Container = styled.div`
-  display: flex;
-  gap: 20px;
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 16px;
-  font-family: 'Noto Sans KR', sans-serif;
-  box-sizing: border-box;
-  overflow-x: hidden;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 8px;
-    gap: 12px;
-  }
-`;
-
-const StockInfoContainer = styled.div`
-  flex: 3;
-  background: #ffffff;
-  border: 1px solid #f2f2f2;
-  border-radius: 16px;
-  padding: 16px;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    padding: 12px;
-  }
-`;
-
-const OrderBoxContainer = styled.div`
-  flex: 1;
-  min-width: 320px;
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  color: #333;
-  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.08);
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-
-const StockInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const StockTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
-`;
-
-const StockCode = styled.span`
-  font-size: 14px;
-  color: #8b95a1;
-`;
-
-const StockPrice = styled.div`
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 16px 0;
-`;
-
-const Tags = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-`;
-
-const Tag = styled.span`
-  font-size: 12px;
-  padding: 4px 8px;
-  background-color: #f2f2f2;
-  border-radius: 12px;
-  color: #8b95a1;
-`;
-
-const ChartContainer = styled.div`
-  width: 100%;
-  height: 450px;
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin: 20px 0;
-  padding: 16px;
-  position: relative;
-  overflow: hidden;
-  box-sizing: border-box;
-  
-  @media (max-width: 768px) {
-    height: 350px;
-    padding: 8px;
-  }
-`;
-
-const OrderTypeContainer = styled.div`
-  display: flex;
-  background: #F2F4F6;
-  border-radius: 14px;
-  padding: 4px;
-  height: 48px;
-`;
-
-const OrderTypeButton = styled.button`
-  flex: 1;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 500;
-  background: ${(props) => (props.active ? '#fff' : 'transparent')};
-  color: ${(props) => (props.active ? '#333' : '#8B95A1')};
-  cursor: pointer;
-  box-shadow: ${(props) => (props.active ? '0px 1px 3px rgba(0, 0, 0, 0.1)' : 'none')};
-  transition: all 0.2s ease;
-`;
-
-const PriceTypeContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  width: 100%;
-
-  button {
-    flex: 1;
-    height: 48px;
-    padding: 0;
-    border: none;
-    border-radius: 14px;
-    background: #F2F4F6;
-    font-size: 15px;
-    color: #8B95A1;
-    cursor: pointer;
-
-    &.active {
-      color: #333;
-    }
-  }
-`;
-
-const PriceInput = styled.div`
-  width: 100%;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  background: #F2F4F6;
-  border-radius: 14px;
-  padding: 0 16px;
-
-  input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    font-size: 15px;
-    text-align: right;
-    color: #333;
-    
-    &:focus {
-      outline: none;
-    }
-  }
-
-  span {
-    color: #333;
-    margin-left: 4px;
-  }
-`;
-
-const QuantityContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  height: 48px;
-
-  span {
-    font-size: 15px;
-    color: #333;
-    min-width: 40px;
-  }
-`;
-
-const QuantityInputContainer = styled.div`
-  flex: 1;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  background: #F2F4F6;
-  border-radius: 14px;
-  padding: 0 8px;
-
-  input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    font-size: 15px;
-    text-align: right;
-    color: #333;
-    padding: 0 8px;
-    
-    &:focus {
-      outline: none;
-    }
-  }
-
-  button {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: #8B95A1;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-`;
-
-const InfoList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 0;
-  border-top: 1px solid #F2F4F6;
-  border-bottom: 1px solid #F2F4F6;
-  
-  div {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #666;
-  }
-`;
-
-const OrderButton = styled.button`
-  width: 100%;
-  height: 48px;
-  border: none;
-  border-radius: 14px;
-  background: ${(props) => (props.buy ? '#FF4D4D' : '#4D4DFF')};
-  color: white;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s ease;
-
-  &:hover {
-    background: ${(props) => (props.buy ? '#FF3B3B' : '#3B4DFF')};
-  }
-`;
-
-const TableContainer = styled.div`
-  margin-top: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  padding: 16px;
-`;
-
-const DataTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
+import { createChart } from 'lightweight-charts';
+import * as S from './StockDetailStyles';
+import skLogo from '../../assets/sk.png';
 
 function StockDetail() {
   const { stockId } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('chart');
+  const [timeframe, setTimeframe] = useState('1min');
   const [orderType, setOrderType] = useState('buy');
   const [orderPrice, setOrderPrice] = useState(0);
   const [quantity, setQuantity] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [primaryAccountId, setPrimaryAccountId] = useState(null);
+  const [priceChange, setPriceChange] = useState({ value: 0, percent: 0 });
+  
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
+  const ma5SeriesRef = useRef(null);
+  const ma10SeriesRef = useRef(null);
+  const ma20SeriesRef = useRef(null);
+  const wsRef = useRef(null);
+  const currentCandleRef = useRef(null);
+
+  const parseAndFormatData = (data) => ({
+    time: data.time ? Math.floor(new Date(data.time).getTime() / 1000) : 
+      Math.floor(new Date().getTime() / 1000),
+    open: parseFloat(data.openPrice),
+    high: parseFloat(data.highPrice),
+    low: parseFloat(data.lowPrice),
+    close: parseFloat(data.currentPrice),
+    volume: parseFloat(data.contingentVol)
+  });
+
+  const parseWSData = (data) => {
+    const [hours, minutes, seconds] = [
+      data.time.slice(0, 2),
+      data.time.slice(2, 4),
+      data.time.slice(4, 6)
+    ].map(Number);
+
+    const now = new Date();
+    now.setHours(hours, minutes, seconds, 0);
+
+    return {
+      time: Math.floor(now.getTime() / 1000),
+      open: parseFloat(data.openPrice),
+      high: parseFloat(data.highPrice),
+      low: parseFloat(data.lowPrice),
+      close: parseFloat(data.currentPrice),
+      volume: parseFloat(data.contingentVol)
+    };
+  };
+
+  const processCandles = (data, interval) => {
+    const periodSeconds = interval === '1min' ? 60 : 600;
+    const groupedData = {};
+
+    data.forEach(candle => {
+      const periodTimestamp = Math.floor(candle.time / periodSeconds) * periodSeconds;
+      
+      if (!groupedData[periodTimestamp]) {
+        groupedData[periodTimestamp] = {
+          time: periodTimestamp,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume
+        };
+      } else {
+        const existing = groupedData[periodTimestamp];
+        existing.high = Math.max(existing.high, candle.high);
+        existing.low = Math.min(existing.low, candle.low);
+        existing.close = candle.close;
+        existing.volume += candle.volume;
+      }
+    });
+
+    return Object.values(groupedData).sort((a, b) => a.time - b.time);
+  };
+
+  const calculateMA = (data, period) => {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) continue;
+      
+      const sum = data.slice(i - period + 1, i + 1)
+        .reduce((acc, cur) => acc + cur.close, 0);
+      
+      result.push({
+        time: data[i].time,
+        value: sum / period
+      });
+    }
+    return result;
+  };
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('jwtToken');
-      console.log('저장된 토큰:', token);
+    if (!chartContainerRef.current) return;
 
-      if (!token) {
-        console.log('토큰이 없습니다. 로그인이 필요합니다.');
-        navigate('/login');
-        return;
-      }
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+      layout: {
+        background: { color: '#ffffff' },
+        textColor: '#333333',
+        fontFamily: 'Noto Sans KR',
+      },
+      grid: {
+        vertLines: { color: 'rgba(240, 243, 250, 0.5)' },
+        horzLines: { color: 'rgba(240, 243, 250, 0.5)' },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: {
+          color: '#C4C4C4',
+          width: 0.5,
+          style: 1,
+        },
+        horzLine: {
+          color: '#C4C4C4',
+          width: 0.5,
+          style: 1,
+        },
+      },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        autoScale: true,  // 자동 스케일링
+        mode: 2,  // 가격 스케일 모드
+        alignLabels: true,
+      },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
 
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#ff4747',
+      downColor: '#4788ff',
+      borderUpColor: '#ff4747',
+      borderDownColor: '#4788ff',
+      wickUpColor: '#ff4747',
+      wickDownColor: '#4788ff',
+      priceFormat: {
+        type: 'price',
+        precision: 0,
+        minMove: 50,
+      },
+    });
+
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    });
+
+    const ma5Series = chart.addLineSeries({
+      color: 'rgba(255, 82, 82, 0.8)',
+      lineWidth: 1,
+      title: 'MA5',
+    });
+
+    const ma10Series = chart.addLineSeries({
+      color: 'rgba(66, 133, 244, 0.8)',
+      lineWidth: 1,
+      title: 'MA10',
+    });
+
+    const ma20Series = chart.addLineSeries({
+      color: 'rgba(251, 188, 4, 0.8)',
+      lineWidth: 1,
+      title: 'MA20',
+    });
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+    ma5SeriesRef.current = ma5Series;
+    ma10SeriesRef.current = ma10Series;
+    ma20SeriesRef.current = ma20Series;
+
+    const handleResize = () => {
+      chart.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/v1/users/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await fetch(`http://localhost:8080/api/v1/stock/${stockId}/charts/${timeframe}`);
+        const data = await response.json();
 
-        console.log('받아온 사용자 정보:', response.data);
-        const accountId = response.data.primaryAccountId;
-        console.log('Primary Account ID:', accountId);
-        
-        if (accountId) {
-          setPrimaryAccountId(accountId);
-        } else {
-          console.log('계좌 정보가 없습니다.');
-          alert('주문을 위해서는 계좌가 필요합니다.');
-          navigate('/account');
+        if (!Array.isArray(data) || data.length === 0) {
+          setIsLoading(false);
+          return;
         }
+
+        const parsedData = data.map(parseAndFormatData);
+        const processedData = processCandles(parsedData, timeframe);
+
+        // 이동평균선 계산
+        const ma5Data = calculateMA(processedData, 5);
+        const ma10Data = calculateMA(processedData, 10);
+        const ma20Data = calculateMA(processedData, 20);
+
+        // 데이터 설정
+        candleSeriesRef.current.setData(processedData);
+        ma5SeriesRef.current.setData(ma5Data);
+        ma10SeriesRef.current.setData(ma10Data);
+        ma20SeriesRef.current.setData(ma20Data);
+
+        // 거래량 데이터 설정
+        const volumeData = processedData.map(d => ({
+          time: d.time,
+          value: d.volume,
+          color: d.close >= d.open ? 'rgba(255, 71, 71, 0.3)' : 'rgba(71, 136, 255, 0.3)',
+        }));
+        volumeSeriesRef.current.setData(volumeData);
+
+        // 현재가 및 변동률 설정
+        if (processedData.length > 0) {
+          const lastCandle = processedData[processedData.length - 1];
+          const prevCandle = processedData[processedData.length - 2];
+          
+          setOrderPrice(lastCandle.close);
+          if (prevCandle) {
+            const change = lastCandle.close - prevCandle.close;
+            const changePercent = (change / prevCandle.close) * 100;
+            setPriceChange({ value: change, percent: changePercent });
+          }
+          
+          currentCandleRef.current = lastCandle;
+        }
+
+        chartRef.current.timeScale().fitContent();
+        setIsLoading(false);
 
       } catch (error) {
-        console.error('사용자 정보 조회 실패:', error);
-        console.error('에러 상세:', error.response?.data);
-        if (error.response?.status === 401) {
-          console.log('토큰이 만료되었거나 유효하지 않습니다.');
-          navigate('/login');
-        }
+        console.error('Error fetching data:', error);
+        setIsLoading(false);
       }
     };
 
-    fetchUserData();
-  }, [navigate]);
+    fetchData();
+  }, [stockId, timeframe]);
+
+  // ... 이전 코드에 이어서
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const connectWebSocket = () => {
+      wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${stockId}`);
+      
+      wsRef.current.onopen = () => {
+        console.log('WebSocket Connected');
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const newData = JSON.parse(event.data);
+          const parsed = parseWSData(newData);
+          const interval = timeframe === '1min' ? 60 : 600;
+          const currentPeriodStart = Math.floor(parsed.time / interval) * interval;
+
+          if (currentCandleRef.current && 
+              Math.floor(currentCandleRef.current.time / interval) === Math.floor(currentPeriodStart / interval)) {
+            // 현재 봉 업데이트
+            const updatedCandle = {
+              time: currentCandleRef.current.time,
+              open: currentCandleRef.current.open,
+              high: Math.max(currentCandleRef.current.high, parsed.high),
+              low: Math.min(currentCandleRef.current.low, parsed.low),
+              close: parsed.close,
+              volume: currentCandleRef.current.volume + parsed.volume
+            };
+
+            candleSeriesRef.current.update(updatedCandle);
+            volumeSeriesRef.current.update({
+              time: updatedCandle.time,
+              value: updatedCandle.volume,
+              color: updatedCandle.close >= updatedCandle.open 
+                ? 'rgba(255, 71, 71, 0.3)' 
+                : 'rgba(71, 136, 255, 0.3)',
+            });
+
+            currentCandleRef.current = updatedCandle;
+
+          } else {
+            // 새로운 봉 생성
+            const newCandle = {
+              time: currentPeriodStart,
+              open: parsed.close,
+              high: parsed.close,
+              low: parsed.close,
+              close: parsed.close,
+              volume: parsed.volume
+            };
+
+            candleSeriesRef.current.update(newCandle);
+            volumeSeriesRef.current.update({
+              time: currentPeriodStart,
+              value: parsed.volume,
+              color: 'rgba(255, 71, 71, 0.3)',
+            });
+
+            currentCandleRef.current = newCandle;
+          }
+
+          // 가격 변동 계산
+          if (currentCandleRef.current) {
+            const change = parsed.close - currentCandleRef.current.open;
+            const changePercent = (change / currentCandleRef.current.open) * 100;
+            setPriceChange({ value: change, percent: changePercent });
+          }
+
+          setOrderPrice(parsed.close);
+
+        } catch (error) {
+          console.error('Error processing WebSocket data:', error);
+        }
+      };
+
+      wsRef.current.onclose = () => {
+        console.log('WebSocket Disconnected');
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [isLoading, stockId, timeframe]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken');
+    if (token) {
+      setIsAuthenticated(true);
+      fetchUserData(token);
+    }
+  }, []);
+
+  const fetchUserData = async (token) => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/v1/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const accountId = response.data.primaryAccountId;
+      if (accountId) {
+        setPrimaryAccountId(accountId);
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('jwtToken');
+      }
+    }
+  };
 
   const handleOrder = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     if (!primaryAccountId) {
       alert('계좌 정보가 필요합니다.');
       return;
@@ -351,24 +411,13 @@ function StockDetail() {
       return;
     }
 
-    if (orderPrice <= 0) {
-      alert('주문 가격을 입력해주세요.');
-      return;
-    }
-
-    setLoading(true);
     try {
       const token = localStorage.getItem('jwtToken');
-      console.log('주문 시작 - Account ID:', primaryAccountId);
-
       const orderDTO = {
-        stockName: stockId,
         stockCode: stockId,
         orderQuantity: Number(quantity),
         orderPrice: Number(orderPrice),
       };
-
-      console.log('주문 데이터:', orderDTO);
 
       const response = await axios.post(
         `http://localhost:8080/api/v1/${orderType}-order`,
@@ -380,8 +429,6 @@ function StockDetail() {
           }
         }
       );
-
-      console.log('주문 응답:', response.data);
       
       if (response.status === 200) {
         alert(`${quantity}주 ${orderType === 'buy' ? '매수' : '매도'} 주문이 완료되었습니다.`);
@@ -389,90 +436,152 @@ function StockDetail() {
       }
     } catch (error) {
       console.error('주문 처리 실패:', error);
-      console.error('에러 상세:', error.response?.data);
-      
-      if (error.response?.status === 400 && error.response.data.code === 'INSUFFICIENT_FUNDS') {
-        alert('잔액이 부족합니다.');
-      } else {
-        alert(error.response?.data?.message || '주문 처리 중 오류가 발생했습니다.');
-      }
-    } finally {
-      setLoading(false);
+      alert(error.response?.data?.message || '주문 처리 중 오류가 발생했습니다.');
     }
   };
 
+  const handleQuantityPercent = (percent) => {
+    // 최대 주문 가능 수량 계산 로직 추가 필요
+    const maxQuantity = Math.floor(10000000 / orderPrice); // 예시: 1000만원 기준
+    setQuantity(Math.floor(maxQuantity * (percent / 100)));
+  };
+
   return (
-    <Container>
-      {!primaryAccountId ? (
-        <div>계좌 정보를 불러오는 중...</div>
-      ) : (
-        <OrderBoxContainer>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0' }}>주문하기</h3>
+    <S.Container>
+      <S.StockInfoContainer>
+        <S.Header>
+          <S.StockInfo>
+            <S.StockLogo src={skLogo} alt="SK하이닉스" />
+            <S.StockTitleArea>
+              <S.StockTitle>SK하이닉스</S.StockTitle>
+              <S.StockCode>{stockId}</S.StockCode>
+            </S.StockTitleArea>
+          </S.StockInfo>
+          <S.PriceArea>
+            <S.CurrentPrice change={priceChange.value}>
+              {orderPrice.toLocaleString()}
+            </S.CurrentPrice>
+            <S.PriceChange value={priceChange.value}>
+              {priceChange.value > 0 ? '+' : ''}{priceChange.value.toLocaleString()}원 
+              ({priceChange.value > 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
+            </S.PriceChange>
+          </S.PriceArea>
+        </S.Header>
 
-          <OrderTypeContainer>
-            <OrderTypeButton
-              active={orderType === 'buy'}
-              onClick={() => {
-                setOrderType('buy');
-                setQuantity(0);
-              }}
-            >
-              매수
-            </OrderTypeButton>
-            <OrderTypeButton
-              active={orderType === 'sell'}
-              onClick={() => {
-                setOrderType('sell');
-                setQuantity(0);
-              }}
-            >
-              매도
-            </OrderTypeButton>
-          </OrderTypeContainer>
+        <S.TabContainer>
+          <S.TabButton 
+            active={activeTab === 'chart'} 
+            onClick={() => setActiveTab('chart')}
+          >
+            차트
+          </S.TabButton>
+          <S.TabButton 
+            active={activeTab === 'orderbook'} 
+            onClick={() => setActiveTab('orderbook')}
+          >
+            호가
+          </S.TabButton>
+          <S.TabButton 
+            active={activeTab === 'info'} 
+            onClick={() => setActiveTab('info')}
+          >
+            종목정보
+          </S.TabButton>
+        </S.TabContainer>
 
-          <PriceInput>
+        <S.TimeframeButtons>
+          <S.TimeButton 
+            active={timeframe === '1min'} 
+            onClick={() => setTimeframe('1min')}
+          >
+            1분
+          </S.TimeButton>
+          <S.TimeButton 
+            active={timeframe === '10min'} 
+            onClick={() => setTimeframe('10min')}
+          >
+            10분
+          </S.TimeButton>
+        </S.TimeframeButtons>
+
+        <S.ChartContainer ref={chartContainerRef} />
+      </S.StockInfoContainer>
+
+      <S.OrderBoxContainer>
+        <S.OrderTypeContainer>
+          <S.OrderTypeButton
+            active={orderType === 'buy'}
+            buy={true}
+            onClick={() => {
+              setOrderType('buy');
+              setQuantity(0);
+            }}
+          >
+            매수
+          </S.OrderTypeButton>
+          <S.OrderTypeButton
+            active={orderType === 'sell'}
+            buy={false}
+            onClick={() => {
+              setOrderType('sell');
+              setQuantity(0);
+            }}
+          >
+            매도
+          </S.OrderTypeButton>
+        </S.OrderTypeContainer>
+
+        <S.InputContainer>
+          <S.InputLabel>주문가격</S.InputLabel>
+          <S.PriceInput>
             <input
-              type="number"
-              value={orderPrice}
-              onChange={(e) => setOrderPrice(Number(e.target.value))}
-              placeholder="주문 가격 입력"
-              min="0"
+              type="text"
+              value={orderPrice.toLocaleString()}
+              readOnly
             />
             <span>원</span>
-          </PriceInput>
+          </S.PriceInput>
+        </S.InputContainer>
 
-          <QuantityContainer>
-            <span>수량</span>
-            <QuantityInputContainer>
-              <button onClick={() => setQuantity(Math.max(0, quantity - 1))}>-</button>
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
-                placeholder="주문 수량 입력"
-                min="0"
-              />
-              <button onClick={() => setQuantity(quantity + 1)}>+</button>
-            </QuantityInputContainer>
-          </QuantityContainer>
+        <S.InputContainer>
+          <S.InputLabel>주문수량</S.InputLabel>
+          <S.PriceInput>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+              min="0"
+            />
+            <span>주</span>
+          </S.PriceInput>
+          <S.QuantityButtons>
+            <S.QuantityButton onClick={() => handleQuantityPercent(10)}>10%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(25)}>25%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(50)}>50%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(100)}>최대</S.QuantityButton>
+          </S.QuantityButtons>
+        </S.InputContainer>
 
-          <InfoList>
-            <div>
-              <span>총 주문 금액</span>
-              <span>{(orderPrice * quantity).toLocaleString()}원</span>
-            </div>
-          </InfoList>
+        <S.OrderSummary>
+          <div>
+            <span>주문가능금액</span>
+            <span>10,000,000원</span>
+          </div>
+          <div>
+            <span>총 주문금액</span>
+            <span>{(orderPrice * quantity).toLocaleString()}원</span>
+          </div>
+        </S.OrderSummary>
 
-          <OrderButton
-            onClick={handleOrder}
-            buy={orderType === 'buy'}
-            disabled={loading}
-          >
-            {loading ? '처리중...' : orderType === 'buy' ? '매수' : '매도'}
-          </OrderButton>
-        </OrderBoxContainer>
-      )}
-    </Container>
+        <S.OrderButton 
+          onClick={handleOrder}
+          buy={orderType === 'buy'}
+          disabled={quantity <= 0}
+        >
+          {orderType === 'buy' ? '매수하기' : '매도하기'}
+        </S.OrderButton>
+      </S.OrderBoxContainer>
+    </S.Container>
   );
 }
 
