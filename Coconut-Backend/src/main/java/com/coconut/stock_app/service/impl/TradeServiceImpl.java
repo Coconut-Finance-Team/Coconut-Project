@@ -1,5 +1,6 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.WriteTransaction;
 import com.coconut.stock_app.dto.trade.OrderDTO;
 import com.coconut.stock_app.entity.on_premise.*;
 import com.coconut.stock_app.exception.CustomException;
@@ -24,6 +25,7 @@ public class TradeServiceImpl implements TradeService {
     private final AccountRepository accountRepository;
     private final OwnedStockRepository ownedStockRepository;
 
+    @WriteTransaction
     public void processBuyOrder(OrderDTO buyOrderDTO, Account account){
 
         BigDecimal totalCost = buyOrderDTO.getOrderPrice().multiply(new BigDecimal(buyOrderDTO.getOrderQuantity()));
@@ -52,6 +54,7 @@ public class TradeServiceImpl implements TradeService {
         }
     }
 
+    @WriteTransaction
     public void processSellOrder(OrderDTO sellOrderDTO, Account account){
 
         Order sellOrder = saveOrder(sellOrderDTO, OrderType.SELL, account);

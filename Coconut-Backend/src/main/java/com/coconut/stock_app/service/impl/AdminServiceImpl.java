@@ -1,5 +1,7 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.ReadOnlyTransaction;
+import com.coconut.stock_app.config.WriteTransaction;
 import com.coconut.stock_app.dto.admin.AccountInfoDTO;
 import com.coconut.stock_app.dto.admin.UserHistoryDTO;
 import com.coconut.stock_app.dto.admin.UserInfoDetailForAdminDTO;
@@ -24,6 +26,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
 
+    @ReadOnlyTransaction
     public List<UserInfoForAdminDto> getAllUser(){
         List<User> users = userRepository.findAll();
         List<UserInfoForAdminDto> userInfoDtos = users.stream()
@@ -33,6 +36,7 @@ public class AdminServiceImpl implements AdminService {
         return userInfoDtos;
     }
 
+    @ReadOnlyTransaction
     public UserInfoDetailForAdminDTO getUser(String uuid){
         User user = userRepository.findByUserUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
@@ -73,6 +77,7 @@ public class AdminServiceImpl implements AdminService {
 
     }
 
+    @WriteTransaction
     public void suspendUser(String uuid){
         User user = userRepository.findByUserUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
@@ -85,6 +90,7 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
     }
 
+    @WriteTransaction
     public void resumeUser(String uuid){
         User user = userRepository.findByUserUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
@@ -97,6 +103,7 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
     }
 
+    @WriteTransaction
     public void suspendAccount(String uuid){
         Account account = accountRepository.findByAccountUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
@@ -109,6 +116,7 @@ public class AdminServiceImpl implements AdminService {
         accountRepository.save(account);
     }
 
+    @WriteTransaction
     public void resumeAccount(String uuid){
         Account account = accountRepository.findByAccountUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
