@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,8 +21,8 @@ import org.springframework.stereotype.Component;
 public class StockInitializer {
 
     private final StockRepository stockRepository;
-    private final StockSearchRepository searchRepository;
-    // 데이터베이스 초기화
+    private final StockSearchRepository stockSearchRepository;
+
     @PostConstruct
     private void initializeStocks() {
         List<Stock> initialStocks = Arrays.asList(
@@ -71,15 +69,28 @@ public class StockInitializer {
         );
 
         for (Stock stock : initialStocks) {
-            StockDocument documents = StockDocument.builder()
-                    .stockCode(stock.getStockCode()).stockName(stock.getStockName()).build();
-
-            searchRepository.save(documents);
             Optional<Stock> existingStock = stockRepository.findByStockCode(stock.getStockCode());
             if (existingStock.isEmpty()) {
                 log.info("새로운 종목 등록: {}", stock.getStockName());
-                stockRepository.save(stock);
+                Stock savedStock = stockRepository.save(stock);
+
+                // ElasticSearch에 색인 추가
+                indexStockInElasticsearch(savedStock);
             }
+        }
+    }
+
+    private void indexStockInElasticsearch(Stock stock) {
+        try {
+            StockDocument document = StockDocument.builder()
+                    .stockCode(stock.getStockCode())
+                    .stockName(stock.getStockName())
+                    .build();
+
+            stockSearchRepository.save(document);
+            log.info("ElasticSearch에 색인 완료: {}", stock.getStockName());
+        } catch (Exception e) {
+            log.error("ElasticSearch 색인 실패: {}", stock.getStockName(), e);
         }
     }
 }
