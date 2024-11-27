@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import styled from 'styled-components';
+import { useParams, useLocation } from 'react-router-dom';
 
 const Container = styled.div`
   padding: 40px;
@@ -38,7 +39,10 @@ const CurrentPrice = styled.div`
 
 const Change = styled.div`
   font-size: 16px;
-  color: ${props => (props.value > 0 ? '#ff4747' : '#4788ff')};
+  color: ${props => {
+    if (props.value === 0) return '#333';
+    return props.value > 0 ? '#ff4747' : '#4788ff';
+  }};
 `;
 
 const TimeframeButtons = styled.div`
@@ -70,7 +74,6 @@ const ChartContainer = styled.div`
   overflow-x: scroll;
   overflow-y: hidden;
   
-  /* 스크롤바 스타일링 */
   ::-webkit-scrollbar {
     height: 8px;
   }
@@ -114,7 +117,9 @@ const TooltipValue = styled.div`
   font-weight: 600;
 `;
 
-function KospiChart() {
+function MarketChart() {
+  const location = useLocation();
+  const isKospi = location.pathname === '/chart/kospi';
   const [chartData, setChartData] = useState([]);
   const [marketData, setMarketData] = useState({
     value: 0,
@@ -123,50 +128,79 @@ function KospiChart() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const wsRef = useRef(null);
-  const lastReceivedData = useRef(null);
   const chartRef = useRef(null);
+  const [isClosed, setIsClosed] = useState(false);
 
-  // 장 마감 시간 체크
+  const isToday = (date) => {
+    const today = new Date();
+    const itemDate = new Date(date);
+    return (
+      itemDate.getDate() === today.getDate() &&
+      itemDate.getMonth() === today.getMonth() &&
+      itemDate.getFullYear() === today.getFullYear()
+    );
+  };
+
   const isMarketClosed = () => {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    return hours >= 15 && minutes >= 20;
+    const closed = (hours > 15) || (hours === 15 && minutes >= 20);
+    
+    if (closed && !isClosed) {
+      setIsClosed(true);
+      setMarketData(prev => ({
+        value: prev.value,
+        change: 0,
+        changePercent: 0
+      }));
+    }
+    
+    return closed;
   };
 
-  // 과거 데이터 로드
   useEffect(() => {
+    const stockCode = isKospi ? '0001' : '1001';
     const fetchHistoricalData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/v1/stock/0001/charts/1min');
+        const response = await fetch(`http://localhost:8080/api/v1/stock/${stockCode}/charts/1min`);
         const data = await response.json();
         
-        const formattedData = data.map(item => ({
-          time: new Date(item.time).toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          value: parseFloat(item.currentPrice)
-        })).sort((a, b) => {
-          const timeA = a.time.split(':').map(Number);
-          const timeB = b.time.split(':').map(Number);
-          return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-        });
+        if (!Array.isArray(data) || data.length === 0) {
+          setIsLoading(false);
+          return;
+        }
 
-        if (formattedData.length > 0) {
-          setChartData(formattedData);
+        const todayData = data
+          .filter(item => isToday(item.time))
+          .map(item => ({
+            time: new Date(item.time).toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            value: parseFloat(item.currentPrice)
+          }))
+          .sort((a, b) => {
+            const timeA = a.time.split(':').map(Number);
+            const timeB = b.time.split(':').map(Number);
+            return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+          });
+
+        if (todayData.length > 0) {
+          setChartData(todayData);
           
-          const lastPrice = formattedData[formattedData.length - 1].value;
-          const prevPrice = formattedData[formattedData.length - 2]?.value;
+          const lastPrice = todayData[todayData.length - 1].value;
+          const firstPrice = todayData[0].value;
 
-          lastReceivedData.current = {
-            time: formattedData[formattedData.length - 1].time,
-            value: lastPrice
-          };
-
-          if (prevPrice) {
-            const change = lastPrice - prevPrice;
-            const changePercent = (change / prevPrice) * 100;
+          if (isMarketClosed()) {
+            setMarketData({
+              value: lastPrice,
+              change: 0,
+              changePercent: 0
+            });
+          } else {
+            const change = lastPrice - firstPrice;
+            const changePercent = (change / firstPrice) * 100;
             setMarketData({
               value: lastPrice,
               change,
@@ -174,7 +208,6 @@ function KospiChart() {
             });
           }
 
-          // 차트 스크롤을 가장 오른쪽으로 이동
           setTimeout(() => {
             if (chartRef.current) {
               chartRef.current.scrollLeft = chartRef.current.scrollWidth;
@@ -190,14 +223,14 @@ function KospiChart() {
     };
 
     fetchHistoricalData();
-  }, []);
+  }, [isKospi]);
 
-  // WebSocket 연결
   useEffect(() => {
     if (isLoading || isMarketClosed()) return;
 
+    const stockCode = isKospi ? '0001' : '1001';
     const connectWebSocket = () => {
-      wsRef.current = new WebSocket('ws://localhost:8080/ws/stock/0001');
+      wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${stockCode}`);
       
       wsRef.current.onopen = () => {
         console.log('WebSocket Connected');
@@ -216,27 +249,22 @@ function KospiChart() {
               value: currentPrice
             };
 
-            if (lastReceivedData.current) {
-              const change = currentPrice - lastReceivedData.current.value;
-              const changePercent = (change / lastReceivedData.current.value) * 100;
-
-              setMarketData({
-                value: currentPrice,
-                change,
-                changePercent
-              });
-            }
-
-            lastReceivedData.current = {
-              time: formattedTime,
-              value: currentPrice
-            };
-
             const updatedData = [...prevData];
             if (updatedData.length > 0 && updatedData[updatedData.length - 1].time === formattedTime) {
               updatedData[updatedData.length - 1] = newPoint;
             } else {
               updatedData.push(newPoint);
+            }
+
+            if (!isMarketClosed()) {
+              const firstPrice = updatedData[0].value;
+              const change = currentPrice - firstPrice;
+              const changePercent = (change / firstPrice) * 100;
+              setMarketData({
+                value: currentPrice,
+                change,
+                changePercent
+              });
             }
 
             if (chartRef.current) {
@@ -255,7 +283,12 @@ function KospiChart() {
           console.log('WebSocket Disconnected, attempting to reconnect...');
           setTimeout(connectWebSocket, 3000);
         } else {
-          console.log('Market closed, stopping reconnection attempts');
+          console.log('Market closed');
+          setMarketData(prev => ({
+            value: prev.value,
+            change: 0,
+            changePercent: 0
+          }));
         }
       };
 
@@ -271,22 +304,15 @@ function KospiChart() {
         wsRef.current.close();
       }
     };
-  }, [isLoading]);
+  }, [isLoading, isKospi]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const currentValue = payload[0].value;
-      const baseValue = lastReceivedData.current?.value;
-      const change = baseValue ? ((currentValue - baseValue) / baseValue) * 100 : 0;
-
       return (
         <CustomTooltipContainer>
           <TooltipLabel>{payload[0].payload.time}</TooltipLabel>
           <TooltipValue>
-            {currentValue.toFixed(2)}
-            <div style={{ fontSize: '12px', marginTop: '4px', color: '#999' }}>
-              {change.toFixed(2)}%
-            </div>
+            {payload[0].value.toFixed(2)}
           </TooltipValue>
         </CustomTooltipContainer>
       );
@@ -302,7 +328,7 @@ function KospiChart() {
     <Container>
       <Header>
         <div>
-          <MarketName>코스피</MarketName>
+          <MarketName>{isKospi ? '코스피' : '코스닥'}</MarketName>
           <PriceInfo>
             <CurrentPrice>
               {marketData.value.toFixed(2)}
@@ -316,7 +342,7 @@ function KospiChart() {
       </Header>
 
       <TimeframeButtons>
-        <TimeButton active={true}>실시간</TimeButton>
+        <TimeButton active={true}>1분</TimeButton>
       </TimeframeButtons>
 
       <ChartContainer ref={chartRef}>
@@ -373,4 +399,4 @@ function KospiChart() {
   );
 }
 
-export default KospiChart;
+export default MarketChart;
