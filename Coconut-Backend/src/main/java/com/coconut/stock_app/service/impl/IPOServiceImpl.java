@@ -1,5 +1,6 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.WriteTransaction;
 import com.coconut.stock_app.dto.ipo.IPODTO;
 import com.coconut.stock_app.dto.ipo.IPORequestDTO;
 import com.coconut.stock_app.entity.cloud.IPO;
@@ -36,6 +37,7 @@ public class IPOServiceImpl implements IPOService {
                 .collect(Collectors.toList());
     }
 
+    @WriteTransaction
     public void subscriptionIPO(IPORequestDTO ipoRequestDTO, Account account){
         IPO ipo = ipoRepository.findByIPOId(ipoRequestDTO.getIpoId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_IPO));
