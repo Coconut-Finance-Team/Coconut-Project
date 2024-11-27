@@ -27,8 +27,6 @@ public class StockSearchServiceImpl implements StockSearchService {
     @Override
     public void initializeSearchIndex() {
         try {
-            log.info("Initializing search index...");
-
             // 각 종목의 최신 차트 데이터 조회
             List<StockChart> latestCharts = stockChartRepository.findLatestChartForEachStock();
             if (latestCharts.isEmpty()) {
@@ -75,22 +73,6 @@ public class StockSearchServiceImpl implements StockSearchService {
         } catch (Exception e) {
             log.error("Failed to search stocks with keyword: {}", keyword, e);
             return Collections.emptyList();
-        }
-    }
-
-    @Override
-    public void updateSearchIndex(StockChart chart) {
-        try {
-            StockDocument document = StockDocument.builder()
-                    .stockCode(chart.getStock().getStockCode())
-                    .stockName(chart.getStock().getStockName())
-                    .build();
-
-            searchRepository.save(document);
-            log.debug("Updated search index for stock: {}", chart.getStock().getStockCode());
-        } catch (Exception e) {
-            log.error("Failed to update search index for stock: {}",
-                    chart.getStock().getStockCode(), e);
         }
     }
 }
