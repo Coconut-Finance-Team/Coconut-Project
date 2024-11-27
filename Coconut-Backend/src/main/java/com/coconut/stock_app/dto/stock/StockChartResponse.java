@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockChartResponse {
-    private Long chartId;
     private String stockCode;
     private BigDecimal openPrice;
     private BigDecimal highPrice;
@@ -26,7 +25,6 @@ public class StockChartResponse {
 
     public static StockChartResponse fromEntity(StockChart entity) {
         return StockChartResponse.builder()
-                .chartId(entity.getChartId())
                 .stockCode(entity.getStock().getStockCode())
                 .openPrice(entity.getOpenPrice())
                 .highPrice(entity.getHighPrice())
