@@ -43,5 +43,3 @@ public class StockChart extends BaseEntity implements Serializable {
     private Stock stock;
 
 }
-
-

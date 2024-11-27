@@ -1,12 +1,11 @@
 package com.coconut.stock_app.websocket;
 
+import com.coconut.stock_app.entity.cloud.StockChart;
+import com.coconut.stock_app.repository.cloud.StockChartRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import com.coconut.stock_app.entity.cloud.StockChart;
-import com.coconut.stock_app.repository.cloud.StockChartRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,11 +41,12 @@ public class BatchStorage {
                 List<StockChart> stockCharts = stockDataMap.get(stockCode);
 
                 if (stockCharts != null && !stockCharts.isEmpty()) {
-                    // MySQL로 데이터 저장
+                    // 1. MySQL 저장
                     stockChartRepository.saveAll(new ArrayList<>(stockCharts));
+
                     log.info("MySQL 저장 완료 - 종목: {}, 저장 데이터 수: {}", stockCode, stockCharts.size());
 
-                    // BatchStorage에서 해당 종목 데이터 제거
+                    // 2. 배치 데이터 클리어
                     clearStockData(stockCode);
                 }
             }
