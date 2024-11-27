@@ -1,82 +1,276 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { createChart } from 'lightweight-charts';
 import * as S from './StockDetailStyles';
+import skLogo from '../../assets/sk.png';
 
 function StockDetail() {
   const { stockId } = useParams();
   const navigate = useNavigate();
-  const [chartData, setChartData] = useState([]);
+  const [activeTab, setActiveTab] = useState('chart');
   const [timeframe, setTimeframe] = useState('1min');
-  const [isLoading, setIsLoading] = useState(true);
   const [orderType, setOrderType] = useState('buy');
   const [orderPrice, setOrderPrice] = useState(0);
   const [quantity, setQuantity] = useState(0);
-  const [primaryAccountId, setPrimaryAccountId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const wsRef = useRef(null);
+  const [primaryAccountId, setPrimaryAccountId] = useState(null);
+  const [priceChange, setPriceChange] = useState({ value: 0, percent: 0 });
+  
+  const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
+  const ma5SeriesRef = useRef(null);
+  const ma10SeriesRef = useRef(null);
+  const ma20SeriesRef = useRef(null);
+  const wsRef = useRef(null);
+  const currentCandleRef = useRef(null);
 
-  // 사용자 인증 체크
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if (token) {
-      setIsAuthenticated(true);
-      fetchUserData(token);
-    }
-  }, []);
+  const parseAndFormatData = (data) => ({
+    time: data.time ? Math.floor(new Date(data.time).getTime() / 1000) : 
+      Math.floor(new Date().getTime() / 1000),
+    open: parseFloat(data.openPrice),
+    high: parseFloat(data.highPrice),
+    low: parseFloat(data.lowPrice),
+    close: parseFloat(data.currentPrice),
+    volume: parseFloat(data.contingentVol)
+  });
 
-  // 차트 데이터 가공
-  const processChartData = (data) => {
-    return data.map(item => {
-      const open = parseFloat(item.openPrice);
-      const close = parseFloat(item.currentPrice);
-      const high = parseFloat(item.highPrice);
-      const low = parseFloat(item.lowPrice);
+  const parseWSData = (data) => {
+    const [hours, minutes, seconds] = [
+      data.time.slice(0, 2),
+      data.time.slice(2, 4),
+      data.time.slice(4, 6)
+    ].map(Number);
 
-      return {
-        time: new Date(item.time).toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        open,
-        high,
-        low,
-        close,
-        volume: parseFloat(item.contingentVol),
-        shadowHigh: high,
-        shadowLow: low,
-        barLength: Math.abs(open - close),
-        color: close >= open ? '#ff4747' : '#4788ff'
-      };
-    });
+    const now = new Date();
+    now.setHours(hours, minutes, seconds, 0);
+
+    return {
+      time: Math.floor(now.getTime() / 1000),
+      open: parseFloat(data.openPrice),
+      high: parseFloat(data.highPrice),
+      low: parseFloat(data.lowPrice),
+      close: parseFloat(data.currentPrice),
+      volume: parseFloat(data.contingentVol)
+    };
   };
 
-  // 과거 데이터 로드
+  const processCandles = (data, interval) => {
+    const periodSeconds = interval === '1min' ? 60 : 600;
+    const groupedData = {};
+
+    data.forEach(candle => {
+      const periodTimestamp = Math.floor(candle.time / periodSeconds) * periodSeconds;
+      
+      if (!groupedData[periodTimestamp]) {
+        groupedData[periodTimestamp] = {
+          time: periodTimestamp,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume
+        };
+      } else {
+        const existing = groupedData[periodTimestamp];
+        existing.high = Math.max(existing.high, candle.high);
+        existing.low = Math.min(existing.low, candle.low);
+        existing.close = candle.close;
+        existing.volume += candle.volume;
+      }
+    });
+
+    return Object.values(groupedData).sort((a, b) => a.time - b.time);
+  };
+
+  const calculateMA = (data, period) => {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) continue;
+      
+      const sum = data.slice(i - period + 1, i + 1)
+        .reduce((acc, cur) => acc + cur.close, 0);
+      
+      result.push({
+        time: data[i].time,
+        value: sum / period
+      });
+    }
+    return result;
+  };
+
   useEffect(() => {
-    const fetchHistoricalData = async () => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+      layout: {
+        background: { color: '#ffffff' },
+        textColor: '#333333',
+        fontFamily: 'Noto Sans KR',
+      },
+      grid: {
+        vertLines: { color: 'rgba(240, 243, 250, 0.5)' },
+        horzLines: { color: 'rgba(240, 243, 250, 0.5)' },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: {
+          color: '#C4C4C4',
+          width: 0.5,
+          style: 1,
+        },
+        horzLine: {
+          color: '#C4C4C4',
+          width: 0.5,
+          style: 1,
+        },
+      },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        autoScale: true,  // 자동 스케일링
+        mode: 2,  // 가격 스케일 모드
+        alignLabels: true,
+      },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#ff4747',
+      downColor: '#4788ff',
+      borderUpColor: '#ff4747',
+      borderDownColor: '#4788ff',
+      wickUpColor: '#ff4747',
+      wickDownColor: '#4788ff',
+      priceFormat: {
+        type: 'price',
+        precision: 0,
+        minMove: 50,
+      },
+    });
+
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    });
+
+    const ma5Series = chart.addLineSeries({
+      color: 'rgba(255, 82, 82, 0.8)',
+      lineWidth: 1,
+      title: 'MA5',
+    });
+
+    const ma10Series = chart.addLineSeries({
+      color: 'rgba(66, 133, 244, 0.8)',
+      lineWidth: 1,
+      title: 'MA10',
+    });
+
+    const ma20Series = chart.addLineSeries({
+      color: 'rgba(251, 188, 4, 0.8)',
+      lineWidth: 1,
+      title: 'MA20',
+    });
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+    ma5SeriesRef.current = ma5Series;
+    ma10SeriesRef.current = ma10Series;
+    ma20SeriesRef.current = ma20Series;
+
+    const handleResize = () => {
+      chart.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/v1/stock/${stockId}/charts/${timeframe}`);
         const data = await response.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-          const formattedData = processChartData(data);
-          setChartData(formattedData);
-          setOrderPrice(formattedData[formattedData.length - 1].close);
+
+        if (!Array.isArray(data) || data.length === 0) {
+          setIsLoading(false);
+          return;
         }
-        
+
+        const parsedData = data.map(parseAndFormatData);
+        const processedData = processCandles(parsedData, timeframe);
+
+        // 이동평균선 계산
+        const ma5Data = calculateMA(processedData, 5);
+        const ma10Data = calculateMA(processedData, 10);
+        const ma20Data = calculateMA(processedData, 20);
+
+        // 데이터 설정
+        candleSeriesRef.current.setData(processedData);
+        ma5SeriesRef.current.setData(ma5Data);
+        ma10SeriesRef.current.setData(ma10Data);
+        ma20SeriesRef.current.setData(ma20Data);
+
+        // 거래량 데이터 설정
+        const volumeData = processedData.map(d => ({
+          time: d.time,
+          value: d.volume,
+          color: d.close >= d.open ? 'rgba(255, 71, 71, 0.3)' : 'rgba(71, 136, 255, 0.3)',
+        }));
+        volumeSeriesRef.current.setData(volumeData);
+
+        // 현재가 및 변동률 설정
+        if (processedData.length > 0) {
+          const lastCandle = processedData[processedData.length - 1];
+          const prevCandle = processedData[processedData.length - 2];
+          
+          setOrderPrice(lastCandle.close);
+          if (prevCandle) {
+            const change = lastCandle.close - prevCandle.close;
+            const changePercent = (change / prevCandle.close) * 100;
+            setPriceChange({ value: change, percent: changePercent });
+          }
+          
+          currentCandleRef.current = lastCandle;
+        }
+
+        chartRef.current.timeScale().fitContent();
         setIsLoading(false);
+
       } catch (error) {
-        console.error('Error fetching historical data:', error);
+        console.error('Error fetching data:', error);
         setIsLoading(false);
       }
     };
 
-    fetchHistoricalData();
+    fetchData();
   }, [stockId, timeframe]);
 
-  // WebSocket 연결
+  // ... 이전 코드에 이어서
+
   useEffect(() => {
     if (isLoading) return;
 
@@ -90,38 +284,62 @@ function StockDetail() {
       wsRef.current.onmessage = (event) => {
         try {
           const newData = JSON.parse(event.data);
-          const formattedTime = newData.time.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2');
-          
-          const processedData = {
-            time: formattedTime,
-            open: parseFloat(newData.openPrice),
-            high: parseFloat(newData.highPrice),
-            low: parseFloat(newData.lowPrice),
-            close: parseFloat(newData.currentPrice),
-            volume: parseFloat(newData.contingentVol),
-            shadowHigh: parseFloat(newData.highPrice),
-            shadowLow: parseFloat(newData.lowPrice),
-            barLength: Math.abs(parseFloat(newData.openPrice) - parseFloat(newData.currentPrice)),
-            color: parseFloat(newData.currentPrice) >= parseFloat(newData.openPrice) ? '#ff4747' : '#4788ff'
-          };
+          const parsed = parseWSData(newData);
+          const interval = timeframe === '1min' ? 60 : 600;
+          const currentPeriodStart = Math.floor(parsed.time / interval) * interval;
 
-          setChartData(prevData => {
-            const updatedData = [...prevData];
-            if (updatedData.length > 0 && updatedData[updatedData.length - 1].time === formattedTime) {
-              updatedData[updatedData.length - 1] = processedData;
-            } else {
-              updatedData.push(processedData);
-            }
+          if (currentCandleRef.current && 
+              Math.floor(currentCandleRef.current.time / interval) === Math.floor(currentPeriodStart / interval)) {
+            // 현재 봉 업데이트
+            const updatedCandle = {
+              time: currentCandleRef.current.time,
+              open: currentCandleRef.current.open,
+              high: Math.max(currentCandleRef.current.high, parsed.high),
+              low: Math.min(currentCandleRef.current.low, parsed.low),
+              close: parsed.close,
+              volume: currentCandleRef.current.volume + parsed.volume
+            };
 
-            // 최대 데이터 포인트 제한
-            if (updatedData.length > 100) {
-              updatedData.shift();
-            }
+            candleSeriesRef.current.update(updatedCandle);
+            volumeSeriesRef.current.update({
+              time: updatedCandle.time,
+              value: updatedCandle.volume,
+              color: updatedCandle.close >= updatedCandle.open 
+                ? 'rgba(255, 71, 71, 0.3)' 
+                : 'rgba(71, 136, 255, 0.3)',
+            });
 
-            return updatedData;
-          });
+            currentCandleRef.current = updatedCandle;
 
-          setOrderPrice(parseFloat(newData.currentPrice));
+          } else {
+            // 새로운 봉 생성
+            const newCandle = {
+              time: currentPeriodStart,
+              open: parsed.close,
+              high: parsed.close,
+              low: parsed.close,
+              close: parsed.close,
+              volume: parsed.volume
+            };
+
+            candleSeriesRef.current.update(newCandle);
+            volumeSeriesRef.current.update({
+              time: currentPeriodStart,
+              value: parsed.volume,
+              color: 'rgba(255, 71, 71, 0.3)',
+            });
+
+            currentCandleRef.current = newCandle;
+          }
+
+          // 가격 변동 계산
+          if (currentCandleRef.current) {
+            const change = parsed.close - currentCandleRef.current.open;
+            const changePercent = (change / currentCandleRef.current.open) * 100;
+            setPriceChange({ value: change, percent: changePercent });
+          }
+
+          setOrderPrice(parsed.close);
 
         } catch (error) {
           console.error('Error processing WebSocket data:', error);
@@ -145,9 +363,16 @@ function StockDetail() {
         wsRef.current.close();
       }
     };
-  }, [isLoading, stockId]);
+  }, [isLoading, stockId, timeframe]);
 
-  // 사용자 데이터 조회
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken');
+    if (token) {
+      setIsAuthenticated(true);
+      fetchUserData(token);
+    }
+  }, []);
+
   const fetchUserData = async (token) => {
     try {
       const response = await axios.get('http://localhost:8080/api/v1/users/me', {
@@ -170,7 +395,6 @@ function StockDetail() {
     }
   };
 
-  // 주문 처리
   const handleOrder = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -216,26 +440,10 @@ function StockDetail() {
     }
   };
 
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.8)',
-          padding: '12px',
-          borderRadius: '4px',
-          color: 'white'
-        }}>
-          <div>{data.time}</div>
-          <div>시가: {data.open.toLocaleString()}</div>
-          <div>고가: {data.high.toLocaleString()}</div>
-          <div>저가: {data.low.toLocaleString()}</div>
-          <div>종가: {data.close.toLocaleString()}</div>
-          <div>거래량: {data.volume.toLocaleString()}</div>
-        </div>
-      );
-    }
-    return null;
+  const handleQuantityPercent = (percent) => {
+    // 최대 주문 가능 수량 계산 로직 추가 필요
+    const maxQuantity = Math.floor(10000000 / orderPrice); // 예시: 1000만원 기준
+    setQuantity(Math.floor(maxQuantity * (percent / 100)));
   };
 
   return (
@@ -243,10 +451,43 @@ function StockDetail() {
       <S.StockInfoContainer>
         <S.Header>
           <S.StockInfo>
-            <S.StockTitle>{stockId}</S.StockTitle>
-            <S.StockCode>{stockId}</S.StockCode>
+            <S.StockLogo src={skLogo} alt="SK하이닉스" />
+            <S.StockTitleArea>
+              <S.StockTitle>SK하이닉스</S.StockTitle>
+              <S.StockCode>{stockId}</S.StockCode>
+            </S.StockTitleArea>
           </S.StockInfo>
+          <S.PriceArea>
+            <S.CurrentPrice change={priceChange.value}>
+              {orderPrice.toLocaleString()}
+            </S.CurrentPrice>
+            <S.PriceChange value={priceChange.value}>
+              {priceChange.value > 0 ? '+' : ''}{priceChange.value.toLocaleString()}원 
+              ({priceChange.value > 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
+            </S.PriceChange>
+          </S.PriceArea>
         </S.Header>
+
+        <S.TabContainer>
+          <S.TabButton 
+            active={activeTab === 'chart'} 
+            onClick={() => setActiveTab('chart')}
+          >
+            차트
+          </S.TabButton>
+          <S.TabButton 
+            active={activeTab === 'orderbook'} 
+            onClick={() => setActiveTab('orderbook')}
+          >
+            호가
+          </S.TabButton>
+          <S.TabButton 
+            active={activeTab === 'info'} 
+            onClick={() => setActiveTab('info')}
+          >
+            종목정보
+          </S.TabButton>
+        </S.TabContainer>
 
         <S.TimeframeButtons>
           <S.TimeButton 
@@ -263,54 +504,14 @@ function StockDetail() {
           </S.TimeButton>
         </S.TimeframeButtons>
 
-        <S.ChartContainer ref={chartRef}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                orientation="right"
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="shadowHigh"
-                fill="transparent"
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="shadowLow"
-                fill="transparent"
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="barLength"
-                fill={(data) => data.color}
-                stroke={(data) => data.color}
-                isAnimationActive={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </S.ChartContainer>
+        <S.ChartContainer ref={chartContainerRef} />
       </S.StockInfoContainer>
 
       <S.OrderBoxContainer>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0' }}>주문하기</h3>
-
         <S.OrderTypeContainer>
           <S.OrderTypeButton
             active={orderType === 'buy'}
+            buy={true}
             onClick={() => {
               setOrderType('buy');
               setQuantity(0);
@@ -320,6 +521,7 @@ function StockDetail() {
           </S.OrderTypeButton>
           <S.OrderTypeButton
             active={orderType === 'sell'}
+            buy={false}
             onClick={() => {
               setOrderType('sell');
               setQuantity(0);
@@ -329,37 +531,53 @@ function StockDetail() {
           </S.OrderTypeButton>
         </S.OrderTypeContainer>
 
-        <S.PriceInput>
-          <input
-            type="text"
-            value={orderPrice.toLocaleString()}
-            readOnly
-          />
-          <span>원</span>
-        </S.PriceInput>
+        <S.InputContainer>
+          <S.InputLabel>주문가격</S.InputLabel>
+          <S.PriceInput>
+            <input
+              type="text"
+              value={orderPrice.toLocaleString()}
+              readOnly
+            />
+            <span>원</span>
+          </S.PriceInput>
+        </S.InputContainer>
 
-        <S.QuantityContainer>
-          <span>수량</span>
-          <S.QuantityInputContainer>
-            <button onClick={() => setQuantity(Math.max(0, quantity - 1))}>-</button>
+        <S.InputContainer>
+          <S.InputLabel>주문수량</S.InputLabel>
+          <S.PriceInput>
             <input
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
               min="0"
             />
-            <button onClick={() => setQuantity(quantity + 1)}>+</button>
-          </S.QuantityInputContainer>
-        </S.QuantityContainer>
+            <span>주</span>
+          </S.PriceInput>
+          <S.QuantityButtons>
+            <S.QuantityButton onClick={() => handleQuantityPercent(10)}>10%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(25)}>25%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(50)}>50%</S.QuantityButton>
+            <S.QuantityButton onClick={() => handleQuantityPercent(100)}>최대</S.QuantityButton>
+          </S.QuantityButtons>
+        </S.InputContainer>
 
-        <S.InfoList>
+        <S.OrderSummary>
           <div>
-            <span>총 주문 금액</span>
+            <span>주문가능금액</span>
+            <span>10,000,000원</span>
+          </div>
+          <div>
+            <span>총 주문금액</span>
             <span>{(orderPrice * quantity).toLocaleString()}원</span>
           </div>
-        </S.InfoList>
+        </S.OrderSummary>
 
-        <S.OrderButton onClick={handleOrder} buy={orderType === 'buy'}>
+        <S.OrderButton 
+          onClick={handleOrder}
+          buy={orderType === 'buy'}
+          disabled={quantity <= 0}
+        >
           {orderType === 'buy' ? '매수하기' : '매도하기'}
         </S.OrderButton>
       </S.OrderBoxContainer>

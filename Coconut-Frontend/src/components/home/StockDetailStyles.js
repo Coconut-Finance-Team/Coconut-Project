@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const Container = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 24px;
   max-width: 1200px;
   margin: 20px auto;
   padding: 16px;
@@ -20,31 +20,25 @@ export const Container = styled.div`
 export const StockInfoContainer = styled.div`
   flex: 3;
   background: #ffffff;
-  border: 1px solid #f2f2f2;
-  border-radius: 16px;
-  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 24px;
   box-sizing: border-box;
   overflow: hidden;
 
   @media (max-width: 768px) {
-    padding: 12px;
+    padding: 16px;
   }
 `;
 
-export const OrderBoxContainer = styled.div`
-  flex: 1;
-  min-width: 320px;
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 24px 20px;
+export const Header = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  color: #333;
-  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.08);
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
 `;
 
-export const Header = styled.div`
+export const StockInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
@@ -53,11 +47,11 @@ export const Header = styled.div`
 export const StockLogo = styled.img`
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: 12px;
   object-fit: cover;
 `;
 
-export const StockInfo = styled.div`
+export const StockTitleArea = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -66,95 +60,134 @@ export const StockInfo = styled.div`
 export const StockTitle = styled.h2`
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: #222222;
   margin: 0;
 `;
 
 export const StockCode = styled.span`
-  font-size: 14px;
-  color: #8b95a1;
-`;
-
-export const StockPrice = styled.div`
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 16px 0;
-`;
-
-export const Tags = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-`;
-
-export const Tag = styled.span`
-  font-size: 12px;
-  padding: 4px 8px;
-  background-color: #f2f2f2;
-  border-radius: 12px;
-  color: #8b95a1;
-`;
-
-export const ChartContainer = styled.div`
-  width: 100%;
-  height: 450px;
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin: 20px 0;
-  padding: 16px;
-  position: relative;
-  overflow: hidden;
-  box-sizing: border-box;
-  
-  @media (max-width: 768px) {
-    height: 350px;
-    padding: 8px;
-  }
-`;
-
-export const OrderTypeContainer = styled.div`
-  display: flex;
-  background: #F2F4F6;
-  border-radius: 14px;
-  padding: 4px;
-  height: 48px;
-`;
-
-export const OrderTypeButton = styled.button`
-  flex: 1;
-  border: none;
-  border-radius: 10px;
   font-size: 15px;
-  font-weight: 500;
-  background: ${props => props.active ? '#fff' : 'transparent'};
-  color: ${props => props.active ? '#333' : '#8B95A1'};
+  color: #888888;
+`;
+
+export const PriceArea = styled.div`
+  margin-top: -4px;
+`;
+
+export const CurrentPrice = styled.div`
+  font-size: 32px;
+  font-weight: 700;
+  color: ${props => props.change > 0 ? '#ff4747' : props.change < 0 ? '#4788ff' : '#222222'};
+  text-align: right;
+`;
+
+export const PriceChange = styled.div`
+  font-size: 15px;
+  color: ${props => props.value > 0 ? '#ff4747' : props.value < 0 ? '#4788ff' : '#222222'};
+  text-align: right;
+  margin-top: 4px;
+`;
+
+export const TabContainer = styled.div`
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 24px;
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: ${props => props.active ? '600' : '400'};
+  color: ${props => props.active ? '#222222' : '#888888'};
+  border-bottom: 2px solid ${props => props.active ? '#222222' : 'transparent'};
   cursor: pointer;
-  box-shadow: ${props => props.active ? '0px 1px 3px rgba(0, 0, 0, 0.1)' : 'none'};
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #222222;
+  }
 `;
 
 export const TimeframeButtons = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 `;
 
 export const TimeButton = styled.button`
   padding: 8px 16px;
-  border: 1px solid ${props => props.active ? '#1890ff' : '#d9d9d9'};
-  background: ${props => props.active ? '#1890ff' : '#ffffff'};
+  border: 1px solid ${props => props.active ? 'transparent' : '#e0e0e0'};
+  background: ${props => props.active ? '#2b2b2b' : '#ffffff'};
   color: ${props => props.active ? '#ffffff' : '#666666'};
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #1890ff;
-    color: ${props => props.active ? '#ffffff' : '#1890ff'};
+    background: ${props => props.active ? '#2b2b2b' : '#f8f8f8'};
   }
+`;
+
+export const ChartContainer = styled.div`
+  width: 100%;
+  height: 450px;
+  margin-bottom: 24px;
+  
+  @media (max-width: 768px) {
+    height: 350px;
+  }
+`;
+
+export const OrderBoxContainer = styled.div`
+  flex: 1;
+  min-width: 320px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+export const OrderTypeContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+`;
+
+export const OrderTypeButton = styled.button`
+  flex: 1;
+  height: 48px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: ${props => props.active ? (props.buy ? '#ff4747' : '#4788ff') : '#f8f8f8'};
+  color: ${props => props.active ? '#ffffff' : '#666666'};
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.active ? 
+      (props.buy ? '#ff3b3b' : '#3b7bff') : 
+      '#f0f0f0'};
+  }
+`;
+
+export const InputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const InputLabel = styled.div`
+  font-size: 14px;
+  color: #666666;
 `;
 
 export const PriceInput = styled.div`
@@ -162,18 +195,19 @@ export const PriceInput = styled.div`
   height: 48px;
   display: flex;
   align-items: center;
-  background: #F2F4F6;
-  border-radius: 14px;
+  background: #f8f8f8;
+  border-radius: 8px;
   padding: 0 16px;
   box-sizing: border-box;
 
   input {
-    width: 100%;
+    flex: 1;
     border: none;
-    background: transparent;
+    background: none;
     font-size: 15px;
+    font-weight: 500;
     text-align: right;
-    color: #333;
+    color: #222222;
     
     &:focus {
       outline: none;
@@ -181,121 +215,72 @@ export const PriceInput = styled.div`
   }
 
   span {
-    color: #333;
-    margin-left: 4px;
+    margin-left: 8px;
+    color: #666666;
   }
 `;
 
-export const QuantityContainer = styled.div`
+export const QuantityButtons = styled.div`
   display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  height: 48px;
-
-  span {
-    font-size: 15px;
-    color: #333;
-    min-width: 40px;
-  }
+  gap: 8px;
+  margin-top: 8px;
 `;
 
-export const QuantityInputContainer = styled.div`
+export const QuantityButton = styled.button`
   flex: 1;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  background: #F2F4F6;
-  border-radius: 14px;
-  padding: 0 8px;
+  height: 36px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #666666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 
-  input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    font-size: 15px;
-    text-align: right;
-    color: #333;
-    padding: 0 8px;
-    
-    &:focus {
-      outline: none;
-    }
-  }
-
-  button {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: #8B95A1;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  &:hover {
+    background: #f8f8f8;
   }
 `;
 
-export const InfoList = styled.div`
+export const OrderSummary = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
-  border-top: 1px solid #F2F4F6;
-  border-bottom: 1px solid #F2F4F6;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
   
   div {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 14px;
-    color: #666;
+    
+    span:first-child {
+      color: #666666;
+    }
+    
+    span:last-child {
+      color: #222222;
+      font-weight: 500;
+    }
   }
 `;
 
 export const OrderButton = styled.button`
   width: 100%;
-  height: 48px;
+  height: 52px;
   border: none;
-  border-radius: 14px;
-  background: ${props => props.buy ? '#FF4D4D' : '#4D4DFF'};
-  color: white;
+  border-radius: 8px;
+  background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff4747' : '#4788ff')};
+  color: #ffffff;
   font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s ease;
+  font-weight: 600;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s;
 
   &:hover {
-    background: ${props => props.buy ? '#FF3B3B' : '#3B4DFF'};
+    background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff3b3b' : '#3b7bff')};
   }
-`;
-
-export const TableContainer = styled.div`
-  margin-top: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  padding: 16px;
-`;
-
-export const DataTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-export const Th = styled.th`
-  text-align: ${props => props.align || 'left'};
-  padding: 12px 8px;
-  color: #8b95a1;
-  font-weight: 400;
-  font-size: 13px;
-  vertical-align: middle;
-`;
-
-export const Td = styled.td`
-  padding: 12px 8px;
-  font-size: 14px;
-  color: ${props => props.color || '#333'};
-  text-align: ${props => props.align || 'left'};
-  border-top: 1px solid #f2f2f2;
-  vertical-align: middle;
 `;
