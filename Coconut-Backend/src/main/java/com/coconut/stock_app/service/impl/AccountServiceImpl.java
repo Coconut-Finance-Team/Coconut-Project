@@ -209,16 +209,19 @@ public class AccountServiceImpl implements AccountService {
         Stock stock = stockRepository.findByStockCode(ownedStock.getStockCode())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_STOCK));
 
-        StockChart stockChart = stockChartRepository.findStockChartsByStockCode(stock.getStockCode(), PageRequest.of(0, 1))
+        StockChart stockChart = stockChartRepository.findStockChartsByStockCode(stock.getStockCode(),
+                        PageRequest.of(0, 1))
                 .stream().findFirst()
                 .orElseThrow(() -> new RuntimeException("No StockChart found for stockCode: " + stock.getStockCode()));
 
         System.out.println("Current price: " + stockChart.getCurrentPrice());
 
-        BigDecimal pricePerShare = ownedStock.getTotalPurchasePrice().divide(new BigDecimal(ownedStock.getQuantity()), RoundingMode.HALF_UP);
+        BigDecimal pricePerShare = ownedStock.getTotalPurchasePrice()
+                .divide(new BigDecimal(ownedStock.getQuantity()), RoundingMode.HALF_UP);
         System.out.println("Price per share: " + pricePerShare);
 
-        BigDecimal profit = stockChart.getCurrentPrice().subtract(pricePerShare).multiply(new BigDecimal(ownedStock.getQuantity()));
+        BigDecimal profit = stockChart.getCurrentPrice().subtract(pricePerShare)
+                .multiply(new BigDecimal(ownedStock.getQuantity()));
         System.out.println("Profit: " + profit);
 
         BigDecimal profitRate = pricePerShare.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO :
@@ -235,7 +238,7 @@ public class AccountServiceImpl implements AccountService {
                 .build();
     }
 
-    public List<OwnedIpoDTO> getOwnedIpoDTO(String uuid){
+    public List<OwnedIpoDTO> getOwnedIpoDTO(String uuid) {
         List<OwnedIPO> ownedIPOS = ownedIPORepository.findAllByAccountUuid(uuid);
 
         List<OwnedIpoDTO> ownedIpoDTOS = ownedIPOS.stream()
@@ -245,7 +248,7 @@ public class AccountServiceImpl implements AccountService {
         return ownedIpoDTOS;
     }
 
-    private OwnedIpoDTO mapOwnedIpoToOwnedIpoDTO(OwnedIPO ownedIPO){
+    private OwnedIpoDTO mapOwnedIpoToOwnedIpoDTO(OwnedIPO ownedIPO) {
         IPO ipo = ipoRepository.findByIPOId(ownedIPO.getOwnedIPOid())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_IPO));
 
@@ -259,6 +262,7 @@ public class AccountServiceImpl implements AccountService {
                 .totalPrice(ownedIPO.getTotalPrice())
                 .build();
     }
+
     private TransactionHistoryDTO mapTradeToTransactionHistoryDTO(Trade trade, String accountUuid) {
         String status;
 
