@@ -2,22 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { createChart } from 'lightweight-charts';
-import { createChart } from 'lightweight-charts';
 import * as S from './StockDetailStyles';
-import skLogo from '../../assets/sk.png';
 import skLogo from '../../assets/sk.png';
 
 function StockDetail() {
   const { stockId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('chart');
-  const [activeTab, setActiveTab] = useState('chart');
   const [timeframe, setTimeframe] = useState('1min');
   const [orderType, setOrderType] = useState('buy');
   const [orderPrice, setOrderPrice] = useState(0);
   const [quantity, setQuantity] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [primaryAccountId, setPrimaryAccountId] = useState(null);
@@ -392,7 +387,7 @@ function StockDetail() {
           tickMarkFormatter: formatTime,
           fixLeftEdge: true,
           fixRightEdge: true,
-          barSpacing: 2,
+          barSpacing: 5,
         },
         handleScroll: {
           mouseWheel: false,
@@ -603,15 +598,6 @@ function StockDetail() {
       }
     };
   }, [isLoading, stockId, timeframe]);
-  }, [isLoading, stockId, timeframe]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if (token) {
-      setIsAuthenticated(true);
-      fetchUserData(token);
-    }
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('jwtToken');
@@ -703,11 +689,6 @@ function StockDetail() {
               <S.StockTitle>SK하이닉스</S.StockTitle>
               <S.StockCode>{stockId}</S.StockCode>
             </S.StockTitleArea>
-            <S.StockLogo src={skLogo} alt="SK하이닉스" />
-            <S.StockTitleArea>
-              <S.StockTitle>SK하이닉스</S.StockTitle>
-              <S.StockCode>{stockId}</S.StockCode>
-            </S.StockTitleArea>
           </S.StockInfo>
           <S.PriceArea>
             <S.CurrentPrice change={priceChange.value}>
@@ -718,37 +699,7 @@ function StockDetail() {
               ({priceChange.value > 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
             </S.PriceChange>
           </S.PriceArea>
-          <S.PriceArea>
-            <S.CurrentPrice change={priceChange.value}>
-              {orderPrice.toLocaleString()}
-            </S.CurrentPrice>
-            <S.PriceChange value={priceChange.value}>
-              {priceChange.value > 0 ? '+' : ''}{priceChange.value.toLocaleString()}원 
-              ({priceChange.value > 0 ? '+' : ''}{priceChange.percent.toFixed(2)}%)
-            </S.PriceChange>
-          </S.PriceArea>
         </S.Header>
-
-        <S.TabContainer>
-          <S.TabButton 
-            active={activeTab === 'chart'} 
-            onClick={() => setActiveTab('chart')}
-          >
-            차트
-          </S.TabButton>
-          <S.TabButton 
-            active={activeTab === 'orderbook'} 
-            onClick={() => setActiveTab('orderbook')}
-          >
-            호가
-          </S.TabButton>
-          <S.TabButton 
-            active={activeTab === 'info'} 
-            onClick={() => setActiveTab('info')}
-          >
-            종목정보
-          </S.TabButton>
-        </S.TabContainer>
 
         <S.TabContainer>
           <S.TabButton 
@@ -797,7 +748,6 @@ function StockDetail() {
           <S.OrderTypeButton
             active={orderType === 'buy'}
             buy={true}
-            buy={true}
             onClick={() => {
               setOrderType('buy');
               setQuantity(0);
@@ -808,7 +758,6 @@ function StockDetail() {
           <S.OrderTypeButton
             active={orderType === 'sell'}
             buy={false}
-            buy={false}
             onClick={() => {
               setOrderType('sell');
               setQuantity(0);
@@ -818,21 +767,6 @@ function StockDetail() {
           </S.OrderTypeButton>
         </S.OrderTypeContainer>
 
-        <S.InputContainer>
-          <S.InputLabel>주문가격</S.InputLabel>
-          <S.PriceInput>
-            <input
-              type="text"
-              value={orderPrice.toLocaleString()}
-              readOnly
-            />
-            <span>원</span>
-          </S.PriceInput>
-        </S.InputContainer>
-
-        <S.InputContainer>
-          <S.InputLabel>주문수량</S.InputLabel>
-          <S.PriceInput>
         <S.InputContainer>
           <S.InputLabel>주문가격</S.InputLabel>
           <S.PriceInput>
@@ -863,39 +797,18 @@ function StockDetail() {
             <S.QuantityButton onClick={() => handleQuantityPercent(100)}>최대</S.QuantityButton>
           </S.QuantityButtons>
         </S.InputContainer>
-            <span>주</span>
-          </S.PriceInput>
-          <S.QuantityButtons>
-            <S.QuantityButton onClick={() => handleQuantityPercent(10)}>10%</S.QuantityButton>
-            <S.QuantityButton onClick={() => handleQuantityPercent(25)}>25%</S.QuantityButton>
-            <S.QuantityButton onClick={() => handleQuantityPercent(50)}>50%</S.QuantityButton>
-            <S.QuantityButton onClick={() => handleQuantityPercent(100)}>최대</S.QuantityButton>
-          </S.QuantityButtons>
-        </S.InputContainer>
 
         <S.OrderSummary>
           <div>
             <span>주문가능금액</span>
             <span>10,000,000원</span>
           </div>
-        <S.OrderSummary>
           <div>
-            <span>주문가능금액</span>
-            <span>10,000,000원</span>
-          </div>
-          <div>
-            <span>총 주문금액</span>
             <span>총 주문금액</span>
             <span>{(orderPrice * quantity).toLocaleString()}원</span>
           </div>
         </S.OrderSummary>
-        </S.OrderSummary>
 
-        <S.OrderButton 
-          onClick={handleOrder}
-          buy={orderType === 'buy'}
-          disabled={quantity <= 0}
-        >
         <S.OrderButton 
           onClick={handleOrder}
           buy={orderType === 'buy'}
