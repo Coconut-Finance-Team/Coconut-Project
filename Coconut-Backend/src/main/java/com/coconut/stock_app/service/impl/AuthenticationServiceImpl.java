@@ -1,5 +1,6 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.ReadOnlyTransaction;
 import com.coconut.stock_app.entity.on_premise.User;
 import com.coconut.stock_app.entity.on_premise.UserAccountStatus;
 import com.coconut.stock_app.entity.on_premise.UserRole;
@@ -20,6 +21,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
 
     @Override
+    @ReadOnlyTransaction
     public User getAuthenticatedUser() {
         // 현재 SecurityContext에서 Authentication 객체 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

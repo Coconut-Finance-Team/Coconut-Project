@@ -1,5 +1,7 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.ReadOnlyTransaction;
+import com.coconut.stock_app.config.WriteTransaction;
 import com.coconut.stock_app.dto.auth.UserRegisterRequest;
 import com.coconut.stock_app.dto.user.UserInfoDto;
 import com.coconut.stock_app.entity.on_premise.User;
@@ -25,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
 
     @Override
+    @WriteTransaction
     public void registerUser(UserRegisterRequest request) {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -70,6 +73,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @ReadOnlyTransaction
     public User verifyUser(String username, String phone, String socialSecurityNumber) {
         // 이름, 전화번호, 주민등록번호로 사용자 조회
         return userRepository.findByUsernameAndPhoneAndSocialSecurityNumber(username, phone, socialSecurityNumber)
@@ -77,6 +81,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @WriteTransaction
     public void resetPassword(String email) {
         // 사용자 조회
         User user = userRepository.findByEmail(email)

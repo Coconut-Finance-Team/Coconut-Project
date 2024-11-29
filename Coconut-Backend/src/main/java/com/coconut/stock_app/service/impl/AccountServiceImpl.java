@@ -1,5 +1,7 @@
 package com.coconut.stock_app.service.impl;
 
+import com.coconut.stock_app.config.ReadOnlyTransaction;
+import com.coconut.stock_app.config.WriteTransaction;
 import com.coconut.stock_app.dto.account.AccountCreationRequest;
 import com.coconut.stock_app.dto.account.AccountCreationResponse;
 import com.coconut.stock_app.entity.cloud.StockChart;
@@ -50,6 +52,7 @@ public class AccountServiceImpl implements AccountService {
     private final StockChartRepository stockChartRepository;
 
     @Override
+    @WriteTransaction
     public AccountCreationResponse createAccount(AccountCreationRequest request) {
         // 사용자 검증
         User user = userService.verifyUser(request.getUsername(), request.getPhone(),
@@ -85,6 +88,7 @@ public class AccountServiceImpl implements AccountService {
         return accountId;
     }
 
+    @ReadOnlyTransaction
     public AssetDTO getAsset(String uuid) {
         Account account = accountRepository.findByAccountUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_ACCOUNT));
@@ -102,6 +106,7 @@ public class AccountServiceImpl implements AccountService {
                 .totalAssets(totalAssets).deposit(account.getDeposit()).investedAmount(investedAmount).build();
     }
 
+    @ReadOnlyTransaction
     public List<TransactionHistoryDTO> getTransactionsAll(String uuid) {
         List<TransactionHistoryDTO> tradeHistory = getTransactionsTxn(uuid);
 
@@ -113,6 +118,7 @@ public class AccountServiceImpl implements AccountService {
         return combinedHistory;
     }
 
+    @ReadOnlyTransaction
     public List<TransactionHistoryDTO> getTransactionsTxn(String uuid) {
         List<Trade> trades = tradeRepository.findAllTradesByAccountUuid(uuid);
 
@@ -121,6 +127,7 @@ public class AccountServiceImpl implements AccountService {
         return tradeHistory;
     }
 
+    @ReadOnlyTransaction
     public List<TransactionHistoryDTO> getTransactionsDepositAndWithdrawals(String uuid) {
         List<Transaction> transactions = transactionRepository.findAllTransactionsByAccountUuid(uuid);
 
@@ -130,6 +137,7 @@ public class AccountServiceImpl implements AccountService {
         return transactionHistory;
     }
 
+    @ReadOnlyTransaction
     public TradeDetailDTO getTradeDetail(Long tradeId) {
         Trade trade = tradeRepository.findById(tradeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_TRADE));
@@ -140,6 +148,7 @@ public class AccountServiceImpl implements AccountService {
         return tradeDetailDTO;
     }
 
+    @ReadOnlyTransaction
     public TransactionAmountDTO getTransactionsDepositsAndWithdrawalsDetail(Long transactionId) {
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_TRANSACTION));
@@ -160,6 +169,7 @@ public class AccountServiceImpl implements AccountService {
         return orderHistoryDTOS;
     }
 
+    @ReadOnlyTransaction
     public OrderHistoryDTO getOrderDetail(Long orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_ORDER));
@@ -167,6 +177,7 @@ public class AccountServiceImpl implements AccountService {
         return mapOrderToOrderHistoryDTO(order);
     }
 
+    @ReadOnlyTransaction
     public List<ProfitLossDTO> getAccountSalesProfit(String uuid) {
         List<ProfitLoss> profitLosses = profitLossRepository.findByAllProfitLossByAccountUuid(uuid);
 
@@ -176,6 +187,7 @@ public class AccountServiceImpl implements AccountService {
         return profitLossDTOS;
     }
 
+    @ReadOnlyTransaction
     public ProfitLossDTO getAccountSalesProfitDetail(Long sales_id) {
         ProfitLoss profitLoss = profitLossRepository.findById(sales_id)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_PROFIT_LOSS));
@@ -185,6 +197,7 @@ public class AccountServiceImpl implements AccountService {
         return profitLossDTO;
     }
 
+    @ReadOnlyTransaction
     public AccountDTO getAccount(String uuid) {
         Account account = accountRepository.findByAccountUuid(uuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_ACCOUNT));
@@ -193,6 +206,7 @@ public class AccountServiceImpl implements AccountService {
         return accountDTO;
     }
 
+    @ReadOnlyTransaction
     public List<InvestmentDTO> getInvestment(String uuid) {
         List<OwnedStock> ownedStocks = ownedStockRepository.findAllByAccountUuid(uuid);
 

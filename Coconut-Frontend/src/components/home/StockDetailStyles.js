@@ -3,6 +3,7 @@ import styled from 'styled-components';
 export const Container = styled.div`
   display: flex;
   gap: 24px;
+  gap: 24px;
   max-width: 1200px;
   margin: 20px auto;
   padding: 16px;
@@ -23,14 +24,19 @@ export const StockInfoContainer = styled.div`
   border: 1px solid #f0f0f0;
   border-radius: 12px;
   padding: 24px;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 24px;
   box-sizing: border-box;
   overflow: hidden;
 
   @media (max-width: 768px) {
     padding: 16px;
+    padding: 16px;
   }
 `;
 
+export const Header = styled.div`
 export const Header = styled.div`
   display: flex;
   align-items: flex-start;
@@ -39,6 +45,7 @@ export const Header = styled.div`
   padding: 0 4px;
 `;
 
+export const StockInfo = styled.div`
 export const StockInfo = styled.div`
   display: flex;
   align-items: center;
@@ -49,9 +56,11 @@ export const StockLogo = styled.img`
   width: 48px;
   height: 48px;
   border-radius: 12px;
+  border-radius: 12px;
   object-fit: cover;
 `;
 
+export const StockTitleArea = styled.div`
 export const StockTitleArea = styled.div`
   display: flex;
   flex-direction: column;
@@ -62,10 +71,13 @@ export const StockTitle = styled.h2`
   font-size: 24px;
   font-weight: 700;
   color: #222222;
+  color: #222222;
   margin: 0;
 `;
 
 export const StockCode = styled.span`
+  font-size: 15px;
+  color: #888888;
   font-size: 15px;
   color: #888888;
 `;
@@ -76,7 +88,29 @@ export const PriceArea = styled.div`
 
 export const CurrentPrice = styled.div`
   font-size: 32px;
+export const PriceArea = styled.div`
+  margin-top: -4px;
+`;
+
+export const CurrentPrice = styled.div`
+  font-size: 32px;
   font-weight: 700;
+  color: ${props => props.change > 0 ? '#ff4747' : props.change < 0 ? '#4788ff' : '#222222'};
+  text-align: right;
+`;
+
+export const PriceChange = styled.div`
+  font-size: 15px;
+  color: ${props => props.value > 0 ? '#ff4747' : props.value < 0 ? '#4788ff' : '#222222'};
+  text-align: right;
+  margin-top: 4px;
+`;
+
+export const TabContainer = styled.div`
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 24px;
   color: ${props => props.change > 0 ? '#ff4747' : props.change < 0 ? '#4788ff' : '#222222'};
   text-align: right;
 `;
@@ -177,12 +211,16 @@ export const OrderTypeContainer = styled.div`
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 8px;
 `;
 
 export const OrderTypeButton = styled.button`
   flex: 1;
   height: 48px;
+  height: 48px;
   border: none;
+  border-radius: 8px;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
@@ -216,16 +254,22 @@ export const PriceInput = styled.div`
   align-items: center;
   background: #f8f8f8;
   border-radius: 8px;
+  background: #f8f8f8;
+  border-radius: 8px;
   padding: 0 16px;
   box-sizing: border-box;
 
   input {
     flex: 1;
+    flex: 1;
     border: none;
+    background: none;
     background: none;
     font-size: 15px;
     font-weight: 500;
+    font-weight: 500;
     text-align: right;
+    color: #222222;
     color: #222222;
     
     &:focus {
@@ -246,15 +290,21 @@ export const PriceInput = styled.div`
   span {
     margin-left: 8px;
     color: #666666;
+    margin-left: 8px;
+    color: #666666;
   }
 `;
 
 export const QuantityButtons = styled.div`
+export const QuantityButtons = styled.div`
   display: flex;
+  gap: 8px;
+  margin-top: 8px;
   gap: 8px;
   margin-top: 8px;
 `;
 
+export const QuantityButton = styled.button`
 export const QuantityButton = styled.button`
   flex: 1;
   height: 36px;
@@ -273,10 +323,13 @@ export const QuantityButton = styled.button`
 `;
 
 export const OrderSummary = styled.div`
+export const OrderSummary = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
   border-top: 1px solid #f0f0f0;
   border-bottom: 1px solid #f0f0f0;
   
@@ -284,7 +337,17 @@ export const OrderSummary = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    align-items: center;
     font-size: 14px;
+    
+    span:first-child {
+      color: #666666;
+    }
+    
+    span:last-child {
+      color: #222222;
+      font-weight: 500;
+    }
     
     span:first-child {
       color: #666666;
@@ -300,7 +363,11 @@ export const OrderSummary = styled.div`
 export const OrderButton = styled.button`
   width: 100%;
   height: 52px;
+  height: 52px;
   border: none;
+  border-radius: 8px;
+  background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff4747' : '#4788ff')};
+  color: #ffffff;
   border-radius: 8px;
   background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff4747' : '#4788ff')};
   color: #ffffff;
@@ -310,6 +377,8 @@ export const OrderButton = styled.button`
   transition: all 0.15s;
 
   &:hover {
+    background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff3b3b' : '#3b7bff')};
+  }
     background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff3b3b' : '#3b7bff')};
   }
 `;
