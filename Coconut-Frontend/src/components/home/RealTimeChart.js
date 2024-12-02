@@ -3,12 +3,12 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import skImage from '../../assets/sk.png';
 import samsungImage from '../../assets/samsung.png';
-import naverImage from '../../assets/naver.png';
 import bumyangImage from '../../assets/bumyang.png';
 import daedongImage from '../../assets/daedong.png';
 import kumhoImage from '../../assets/kumho.png';
 import bitnineImage from '../../assets/bitnine.png';
 import mgameImage from '../../assets/mgame.png';
+import lgImage from '../../assets/lg.png';
 import rfmaterialsImage from '../../assets/rfmaterials.png';
 
 const GlobalStyle = createGlobalStyle`
@@ -176,11 +176,11 @@ const RealTimeChart = () => {
       shares: '1,223,055주' 
     },
     { 
-      id: 'naver', 
-      code: '035420',  // 종목코드 추가
+      id: 'lg', 
+      code: '066570',  // 종목코드 추가
       rank: 3, 
-      name: '네이버', 
-      image: naverImage, 
+      name: 'LG전자', 
+      image: lgImage, 
       price: 10750, 
       change: 1050, 
       changePercent: 10.8, 
