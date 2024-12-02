@@ -77,6 +77,7 @@ function App() {
 
             {/* 주식 상세 페이지 라우트 */}
             <Route path="/stock/:stockId" element={<StockDetail />} />
+            
             {/* /stock으로 시작하는 기존 URL을 /stocks로 리다이렉트 */}
             <Route
               path="/stock/:stockId"
