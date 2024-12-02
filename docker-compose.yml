@@ -1,0 +1,42 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: [ "redis-server", "--appendonly", "yes" ]
+
+  on_premis_mysql:
+    image: mysql:8.0
+    container_name: on_premis_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: on_premis_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3307:3306" # 로컬 포트 3307로 접근 가능
+    volumes:
+      - on_premis_data:/var/lib/mysql
+
+  cloud_mysql:
+    image: mysql:8.0
+    container_name: cloud_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cloud_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3308:3306" # 로컬 포트 3308로 접근 가능
+    volumes:
+      - cloud_data:/var/lib/mysql
+
+volumes:
+  redis_data:
+  on_premis_data:
+  cloud_data:
