@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import axios from 'axios'; // Axios 추가
+import axios from 'axios';
 
 const SearchContainer = styled.div`
   padding: 24px;
@@ -20,6 +20,14 @@ const ResultItem = styled.div`
   border: 1px solid #eee;
   border-radius: 8px;
   background: white;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const ResultTitle = styled.h3`
@@ -34,7 +42,8 @@ const ResultContent = styled.p`
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
-  const query = searchParams.get('q'); // 검색 키워드 가져오기
+  const navigate = useNavigate();
+  const query = searchParams.get('q');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +54,9 @@ const SearchPage = () => {
         const response = await axios.get(
           `http://localhost:8080/api/v1/stock/search`,
           {
-            params: { keyword: query }, // 쿼리 파라미터 추가
+            params: { keyword: query },
           }
         );
-        // 응답 데이터 설정
         setResults(response.data || []);
       } catch (error) {
         console.error('검색 중 오류 발생:', error);
@@ -62,6 +70,11 @@ const SearchPage = () => {
     }
   }, [query]);
 
+  // 종목 클릭 시 상세 페이지로 이동하는 핸들러
+  const handleStockClick = (stockCode) => {
+    navigate(`/stock/${stockCode}`);
+  };
+
   if (loading) {
     return <SearchContainer>검색 중...</SearchContainer>;
   }
@@ -71,7 +84,10 @@ const SearchPage = () => {
       <h2>"{query}" 검색 결과</h2>
       <SearchResults>
         {results.map((result) => (
-          <ResultItem key={result.stockCode}>
+          <ResultItem 
+            key={result.stockCode}
+            onClick={() => handleStockClick(result.stockCode)}
+          >
             <ResultTitle>{result.stockName}</ResultTitle>
             <ResultContent>종목코드: {result.stockCode}</ResultContent>
           </ResultItem>

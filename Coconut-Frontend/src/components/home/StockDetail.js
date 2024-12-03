@@ -3,10 +3,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { createChart } from 'lightweight-charts';
 import * as S from './StockDetailStyles';
-import skLogo from '../../assets/sk.png';
+import skImage from '../../assets/sk.png';
+import samsungImage from '../../assets/samsung.png';
+import lgImage from '../../assets/lg.png';
+
+const STOCK_INFO = {
+  '005930': {
+    name: '삼성전자',
+    logo: samsungImage  // 로고 이미지 import 필요
+  },
+  '000660': {
+    name: 'SK하이닉스',
+    logo: skImage
+  },
+  '066570': {
+    name: 'LG전자',
+    logo: lgImage  // 로고 이미지 import 필요
+  }
+};
 
 function StockDetail() {
   const { stockId } = useParams();
+  // 현재 종목 정보 가져오기
+  const currentStock = STOCK_INFO[stockId] || { name: '알 수 없음', logo: null };
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('chart');
   const [timeframe, setTimeframe] = useState('1min');
@@ -684,9 +703,12 @@ function StockDetail() {
       <S.StockInfoContainer>
         <S.Header>
           <S.StockInfo>
-            <S.StockLogo src={skLogo} alt="SK하이닉스" />
+              <S.StockLogo 
+              src={currentStock.logo} 
+              alt={currentStock.name} 
+            />
             <S.StockTitleArea>
-              <S.StockTitle>SK하이닉스</S.StockTitle>
+              <S.StockTitle>{currentStock.name}</S.StockTitle>
               <S.StockCode>{stockId}</S.StockCode>
             </S.StockTitleArea>
           </S.StockInfo>
