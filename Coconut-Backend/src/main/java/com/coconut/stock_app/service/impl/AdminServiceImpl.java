@@ -74,7 +74,6 @@ public class AdminServiceImpl implements AdminService {
                 .accountInfo(accountInfoDTO)
                 .userHistory(combineHistory)
                 .build();
-
     }
 
     @WriteTransaction
