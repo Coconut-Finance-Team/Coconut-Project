@@ -35,17 +35,6 @@ const AdminLayout = ({ children }) => {
             </IconWrapper>
             시스템 모니터링
           </NavItem>
-
-          <CategoryTitle>코코넛 이용고객</CategoryTitle>
-          <NavItem
-            to="/admin/dashboard"
-            $isActive={location.pathname === '/admin/dashboard'}
-          >
-            <IconWrapper>
-              <BiBarChartAlt2 size={20} />
-            </IconWrapper>
-            대시보드
-          </NavItem>
         </Nav>
       </Sidebar>
       <Main>

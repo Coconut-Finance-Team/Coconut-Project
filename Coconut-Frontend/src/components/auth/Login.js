@@ -152,22 +152,22 @@ function Login({ setUser }) {
         const data = await response.json();
         const token = data.token;
         localStorage.setItem('jwtToken', token);
-        
+
         // 현재 로그인한 사용자 정보 가져오기
         const userResponse = await fetch('http://localhost:8080/api/v1/users/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (userResponse.ok) {
           const userData = await userResponse.json();
           console.log('사용자 정보:', userData);
-          
+
           setUser({
             username: userData.username
           });
-          
+
           // 사용자 이름을 포함한 환영 메시지 표시
           alert(`${userData.username}님, 오셨군요! 환영합니다! 🌴`);
           navigate('/');

@@ -7,7 +7,7 @@ import TerminationModal from './modal/TerminationModal';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const Container = styled.div`
   padding: 40px 0;
@@ -124,7 +124,7 @@ function AccountManage() {
 
         const token = localStorage.getItem('jwtToken');
         console.log('Token exists:', !!token);
-        
+
         if (!token) {
           setError('로그인이 필요합니다.');
           setLoading(false);
@@ -138,9 +138,14 @@ function AccountManage() {
 
         // 1. 사용자 정보 가져오기
         console.log('Fetching user info...');
-        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
+        const userResponse = await axios.get(`http://localhost:8080/api/v1/users/me`, { headers });
+
+        console.log('User response data:', userResponse.data);
+        console.log('Primary Account ID:', userResponse.data.primaryAccountId);
+
+
         console.log('User info response:', userResponse.data);
-        
+
         setUser(userResponse.data);
         const primaryAccountId = userResponse.data.primaryAccountId;
         console.log('Primary Account ID from user:', primaryAccountId);
@@ -246,13 +251,13 @@ function AccountManage() {
       <Title>계좌 관리</Title>
 
       {error && (
-        <div style={{ 
-          color: '#dc3545', 
-          padding: '16px', 
+        <div style={{
+          color: '#dc3545',
+          padding: '16px',
           margin: '0 40px 16px',
-          background: '#ffebee', 
+          background: '#ffebee',
           borderRadius: '8px',
-          border: '1px solid #dc3545' 
+          border: '1px solid #dc3545'
         }}>
           {error}
         </div>

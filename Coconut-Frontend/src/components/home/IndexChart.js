@@ -75,177 +75,87 @@ const IndexChart = ({ name, isKospi = true }) => {
   const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
   const [marketData, setMarketData] = useState({
-    value: 0,
-    change: 0,
-    changePercent: 0
+    value: isKospi ? 2428.16 : 661.33,
+    change: isKospi ? -13.69 : -9.61,
+    changePercent: isKospi ? -0.5 : -1.4
   });
-  const wsRef = useRef(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isClosed, setIsClosed] = useState(false);
 
-  // 오늘 날짜의 데이터인지 확인하는 함수
-  const isToday = (date) => {
-    const today = new Date();
-    const itemDate = new Date(date);
-    return (
-      itemDate.getDate() === today.getDate() &&
-      itemDate.getMonth() === today.getMonth() &&
-      itemDate.getFullYear() === today.getFullYear()
-    );
+  // 초기 데이터 생성
+  const generateInitialData = () => {
+    const baseValue = isKospi ? 2450 : 670;
+    const volatility = isKospi ? 40 : 20;
+    const dataPoints = [];
+
+    // 10초 간격으로 데이터 생성
+    for (let hour = 9; hour <= 13; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+
+        const progress = (hour - 9 + minute / 60) / 4;
+        let value = baseValue;
+
+        // 하락 추세
+        value -= progress * volatility;
+
+        // 11시 이후 반등
+        if (hour >= 11) {
+          value += (progress - 0.5) * volatility * 0.5;
+        }
+
+        // 적은 변동성 추가
+        value += (Math.random() - 0.5) * volatility * 0.1;
+
+        dataPoints.push({
+          time,
+          value: parseFloat(value.toFixed(2))
+        });
+      }
+    }
+
+    return dataPoints;
   };
 
-  // 장 마감 여부 확인
-  const isMarketClosed = () => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    return (hours > 15) || (hours === 15 && minutes >= 20);
-  };
-
-  // 과거 데이터 로드
   useEffect(() => {
-    const fetchHistoricalData = async () => {
-      try {
-        const stockCode = isKospi ? '0001' : '1001';
-        const response = await fetch(`http://localhost:8080/api/v1/stock/${stockCode}/charts/1min`);
-        const data = await response.json();
+    const initialData = generateInitialData();
+    setChartData(initialData);
 
-        if (!Array.isArray(data) || data.length === 0) {
-          console.log('No data available');
-          setIsLoading(false);
-          return;
-        }
+    let lastUpdate = Date.now();
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      // 10초마다만 업데이트
+      if (now - lastUpdate >= 10000) {
+        setChartData(prevData => {
+          const lastDataPoint = prevData[prevData.length - 1];
+          const volatility = isKospi ? 2 : 0.5;
+          // 변화량을 더 자연스럽게 조정
+          const change = (Math.random() - 0.5) * volatility;
+          const newValue = parseFloat((lastDataPoint.value + change).toFixed(2));
 
-        const todayData = data
-          .filter(item => isToday(item.time))
-          .map(item => ({
-            time: new Date(item.time).toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            value: parseFloat(item.currentPrice)
-          }))
-          .sort((a, b) => {
-            const timeA = a.time.split(':').map(Number);
-            const timeB = b.time.split(':').map(Number);
-            return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+          const updatedData = [...prevData];
+          updatedData[updatedData.length - 1] = {
+            ...lastDataPoint,
+            value: newValue
+          };
+
+          // 마켓 데이터 업데이트
+          const initialValue = prevData[0].value;
+          const totalChange = newValue - initialValue;
+          const changePercent = (totalChange / initialValue) * 100;
+
+          setMarketData({
+            value: newValue,
+            change: parseFloat(totalChange.toFixed(2)),
+            changePercent: parseFloat(changePercent.toFixed(2))
           });
 
-        if (todayData.length > 0) {
-          setChartData(todayData);
-          const lastPrice = todayData[todayData.length - 1].value;
-          
-          if (isMarketClosed()) {
-            setMarketData({
-              value: lastPrice,
-              change: 0,
-              changePercent: 0
-            });
-          } else {
-            const firstPrice = todayData[0].value;
-            const change = lastPrice - firstPrice;
-            const changePercent = (change / firstPrice) * 100;
-            setMarketData({
-              value: lastPrice,
-              change,
-              changePercent
-            });
-          }
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching historical data:', error);
-        setIsLoading(false);
+          return updatedData;
+        });
+        lastUpdate = now;
       }
-    };
+    }, 1000); // 1초마다 체크하지만 10초 간격으로만 업데이트
 
-    fetchHistoricalData();
-    
-    // 마감 시간 체크를 위한 interval 설정
-    const checkMarketClose = () => {
-      if (isMarketClosed() && !isClosed) {
-        setIsClosed(true);
-        if (wsRef.current) {
-          wsRef.current.close();
-        }
-      }
-    };
-
-    const interval = setInterval(checkMarketClose, 1000);
-    return () => clearInterval(interval);
-  }, [isKospi, isClosed]);
-
-  // WebSocket 연결
-  useEffect(() => {
-    if (isLoading || isMarketClosed()) return;
-
-    const stockCode = isKospi ? '0001' : '1001';
-    const connectWebSocket = () => {
-      wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${stockCode}`);
-      
-      wsRef.current.onopen = () => {
-        console.log('WebSocket Connected');
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const newData = JSON.parse(event.data);
-          const timeStr = newData.time;
-          const formattedTime = `${timeStr.slice(0, 2)}:${timeStr.slice(2, 4)}`;
-          const currentPrice = parseFloat(newData.currentPrice);
-
-          setChartData(prevData => {
-            const newPoint = {
-              time: formattedTime,
-              value: currentPrice
-            };
-
-            const updatedData = [...prevData];
-            if (updatedData.length > 0 && updatedData[updatedData.length - 1].time === formattedTime) {
-              updatedData[updatedData.length - 1] = newPoint;
-            } else {
-              updatedData.push(newPoint);
-            }
-
-            if (!isMarketClosed()) {
-              const firstPrice = updatedData[0].value;
-              const change = currentPrice - firstPrice;
-              const changePercent = (change / firstPrice) * 100;
-              setMarketData({
-                value: currentPrice,
-                change,
-                changePercent
-              });
-            }
-
-            return updatedData;
-          });
-        } catch (error) {
-          console.error('Error processing WebSocket data:', error);
-        }
-      };
-
-      wsRef.current.onclose = () => {
-        if (!isMarketClosed()) {
-          console.log('WebSocket Disconnected, attempting to reconnect...');
-          setTimeout(connectWebSocket, 3000);
-        }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [isLoading, isKospi]);
+    return () => clearInterval(intervalId);
+  }, [isKospi]);
 
   const handleClick = () => {
     navigate(isKospi ? '/chart/kospi' : '/chart/kosdaq');
@@ -254,60 +164,65 @@ const IndexChart = ({ name, isKospi = true }) => {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.8)',
-          padding: '8px',
-          borderRadius: '4px',
-          color: 'white',
-          fontSize: '12px'
-        }}>
-          <div style={{ color: '#999' }}>{payload[0].payload.time}</div>
-          <div style={{ fontWeight: '600' }}>{payload[0].value.toFixed(2)}</div>
-        </div>
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            padding: '8px',
+            borderRadius: '4px',
+            color: 'white',
+            fontSize: '12px'
+          }}>
+            <div style={{ color: '#999' }}>{payload[0].payload.time}</div>
+            <div style={{ fontWeight: '600' }}>{payload[0].value.toFixed(2)}</div>
+          </div>
       );
     }
     return null;
   };
 
   return (
-    <ChartContainer onClick={handleClick}>
-      <InfoSection>
-        <MarketHeader>
-          <MarketName>
-            {name}
-            <FlagImage src={koreaFlag} alt="Korea Flag" />
-          </MarketName>
-        </MarketHeader>
-        <Price>
-          {marketData.value.toFixed(2)}
-        </Price>
-        <Change value={marketData.change}>
-          {marketData.change > 0 ? '+' : ''}
-          {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
-        </Change>
-      </InfoSection>
+      <ChartContainer onClick={handleClick}>
+        <InfoSection>
+          <MarketHeader>
+            <MarketName>
+              {name}
+              <FlagImage src={koreaFlag} alt="Korea Flag" />
+            </MarketName>
+          </MarketHeader>
+          <Price>
+            {marketData.value.toFixed(2)}
+          </Price>
+          <Change value={marketData.change}>
+            {marketData.change > 0 ? '+' : ''}
+            {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
+          </Change>
+        </InfoSection>
 
-      <ChartSection>
-        <ResponsiveContainer width="99%" height="99%" debounce={50}>
-          <LineChart data={chartData}>
-            <YAxis domain={['auto', 'auto']} hide />
-            <Tooltip 
-              content={<CustomTooltip />}
-              cursor={false}
-            />
-            <Line
-              type="monotoneX"
-              dataKey="value"
-              stroke="#ff4747"
-              strokeWidth={1.5}
-              dot={false}
-              isAnimationActive={false}
-              connectNulls={true}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartSection>
-    </ChartContainer>
+        <ChartSection>
+          <ResponsiveContainer width="99%" height="99%" debounce={50}>
+            <LineChart data={chartData}>
+              <YAxis
+                  domain={[
+                    dataMin => Math.floor(dataMin - 5),
+                    dataMax => Math.ceil(dataMax + 5)
+                  ]}
+                  hide
+              />
+              <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={false}
+              />
+              <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#ff4747"
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartSection>
+      </ChartContainer>
   );
 };
 

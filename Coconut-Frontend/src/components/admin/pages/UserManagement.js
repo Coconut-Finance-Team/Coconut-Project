@@ -283,6 +283,7 @@ const UserManagement = () => {
   };
 
   const handleDetailClick = (user) => {
+    console.log('Selected user:', user); // 선택된 user 객체 확인
     setSelectedUser(user);
   };
 

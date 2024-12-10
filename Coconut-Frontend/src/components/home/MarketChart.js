@@ -122,199 +122,104 @@ function MarketChart() {
   const isKospi = location.pathname === '/chart/kospi';
   const [chartData, setChartData] = useState([]);
   const [marketData, setMarketData] = useState({
-    value: 0,
-    change: 0,
-    changePercent: 0
+    value: isKospi ? 2428.16 : 661.33,
+    change: isKospi ? -13.69 : -9.61,
+    changePercent: isKospi ? -0.5 : -1.4
   });
   const [isLoading, setIsLoading] = useState(true);
-  const wsRef = useRef(null);
   const chartRef = useRef(null);
-  const [isClosed, setIsClosed] = useState(false);
-
-  const isToday = (date) => {
-    const today = new Date();
-    const itemDate = new Date(date);
-    return (
-      itemDate.getDate() === today.getDate() &&
-      itemDate.getMonth() === today.getMonth() &&
-      itemDate.getFullYear() === today.getFullYear()
-    );
-  };
-
-  const isMarketClosed = () => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const closed = (hours > 15) || (hours === 15 && minutes >= 20);
-    
-    if (closed && !isClosed) {
-      setIsClosed(true);
-      setMarketData(prev => ({
-        value: prev.value,
-        change: 0,
-        changePercent: 0
-      }));
-    }
-    
-    return closed;
-  };
 
   useEffect(() => {
-    const stockCode = isKospi ? '0001' : '1001';
-    const fetchHistoricalData = async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/api/v1/stock/${stockCode}/charts/1min`);
-        const data = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) {
-          setIsLoading(false);
-          return;
-        }
+    const initialData = generateInitialData();
+    setChartData(initialData);
+    setIsLoading(false);
 
-        const todayData = data
-          .filter(item => isToday(item.time))
-          .map(item => ({
-            time: new Date(item.time).toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            value: parseFloat(item.currentPrice)
-          }))
-          .sort((a, b) => {
-            const timeA = a.time.split(':').map(Number);
-            const timeB = b.time.split(':').map(Number);
-            return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+    let lastUpdate = Date.now();
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      // 10초마다만 업데이트
+      if (now - lastUpdate >= 10000) {
+        setChartData(prevData => {
+          const newData = [...prevData];
+          const lastValue = newData[newData.length - 1].value;
+          const volatility = isKospi ? 2 : 0.5;
+          // 변화량을 더 자연스럽게 조정
+          const change = (Math.random() - 0.5) * volatility;
+          const newValue = parseFloat((lastValue + change).toFixed(2));
+
+          // 마지막 데이터 업데이트
+          newData[newData.length - 1] = {
+            ...newData[newData.length - 1],
+            value: newValue
+          };
+
+          // 마켓 데이터 업데이트
+          const firstValue = newData[0].value;
+          const totalChange = newValue - firstValue;
+          const changePercent = (totalChange / firstValue) * 100;
+
+          setMarketData({
+            value: newValue,
+            change: parseFloat(totalChange.toFixed(2)),
+            changePercent: parseFloat(changePercent.toFixed(2))
           });
 
-        if (todayData.length > 0) {
-          setChartData(todayData);
-          
-          const lastPrice = todayData[todayData.length - 1].value;
-          const firstPrice = todayData[0].value;
-
-          if (isMarketClosed()) {
-            setMarketData({
-              value: lastPrice,
-              change: 0,
-              changePercent: 0
-            });
-          } else {
-            const change = lastPrice - firstPrice;
-            const changePercent = (change / firstPrice) * 100;
-            setMarketData({
-              value: lastPrice,
-              change,
-              changePercent
-            });
-          }
-
-          setTimeout(() => {
-            if (chartRef.current) {
-              chartRef.current.scrollLeft = chartRef.current.scrollWidth;
-            }
-          }, 100);
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching historical data:', error);
-        setIsLoading(false);
+          return newData;
+        });
+        lastUpdate = now;
       }
-    };
+    }, 1000); // 1초마다 체크하지만 10초 간격으로만 업데이트
 
-    fetchHistoricalData();
+    return () => clearInterval(intervalId);
   }, [isKospi]);
 
-  useEffect(() => {
-    if (isLoading || isMarketClosed()) return;
+  const generateInitialData = () => {
+    const baseValue = isKospi ? 2450 : 670;
+    const volatility = isKospi ? 40 : 20;
+    const dataPoints = [];
 
-    const stockCode = isKospi ? '0001' : '1001';
-    const connectWebSocket = () => {
-      wsRef.current = new WebSocket(`ws://localhost:8080/ws/stock/${stockCode}`);
-      
-      wsRef.current.onopen = () => {
-        console.log('WebSocket Connected');
-      };
+    // 10초 간격으로 데이터 생성
+    for (let hour = 9; hour <= 13; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 
-      wsRef.current.onmessage = (event) => {
-        try {
-          const newData = JSON.parse(event.data);
-          const timeStr = newData.time;
-          const formattedTime = `${timeStr.slice(0, 2)}:${timeStr.slice(2, 4)}`;
-          const currentPrice = parseFloat(newData.currentPrice);
+        const progress = (hour - 9 + minute / 60) / 4;
+        let value = baseValue;
 
-          setChartData(prevData => {
-            const newPoint = {
-              time: formattedTime,
-              value: currentPrice
-            };
+        // 하락 추세
+        value -= progress * volatility;
 
-            const updatedData = [...prevData];
-            if (updatedData.length > 0 && updatedData[updatedData.length - 1].time === formattedTime) {
-              updatedData[updatedData.length - 1] = newPoint;
-            } else {
-              updatedData.push(newPoint);
-            }
-
-            if (!isMarketClosed()) {
-              const firstPrice = updatedData[0].value;
-              const change = currentPrice - firstPrice;
-              const changePercent = (change / firstPrice) * 100;
-              setMarketData({
-                value: currentPrice,
-                change,
-                changePercent
-              });
-            }
-
-            if (chartRef.current) {
-              chartRef.current.scrollLeft = chartRef.current.scrollWidth;
-            }
-
-            return updatedData;
-          });
-        } catch (error) {
-          console.error('Error processing WebSocket data:', error);
+        // 11시 이후 반등
+        if (hour >= 11) {
+          value += (progress - 0.5) * volatility * 0.5;
         }
-      };
 
-      wsRef.current.onclose = () => {
-        if (!isMarketClosed()) {
-          console.log('WebSocket Disconnected, attempting to reconnect...');
-          setTimeout(connectWebSocket, 3000);
-        } else {
-          console.log('Market closed');
-          setMarketData(prev => ({
-            value: prev.value,
-            change: 0,
-            changePercent: 0
-          }));
-        }
-      };
+        // 적은 변동성 추가
+        value += (Math.random() - 0.5) * volatility * 0.1;
 
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+        dataPoints.push({
+          time,
+          value: parseFloat(value.toFixed(2))
+        });
       }
-    };
-  }, [isLoading, isKospi]);
+    }
+
+    return dataPoints;
+  };
+
+  const formatXAxis = (tickItem) => {
+    return tickItem.split(':')[0] + ':00';
+  };
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <CustomTooltipContainer>
-          <TooltipLabel>{payload[0].payload.time}</TooltipLabel>
-          <TooltipValue>
-            {payload[0].value.toFixed(2)}
-          </TooltipValue>
-        </CustomTooltipContainer>
+          <CustomTooltipContainer>
+            <TooltipLabel>{payload[0].payload.time}</TooltipLabel>
+            <TooltipValue>
+              {payload[0].value.toFixed(2)}
+            </TooltipValue>
+          </CustomTooltipContainer>
       );
     }
     return null;
@@ -325,77 +230,74 @@ function MarketChart() {
   }
 
   return (
-    <Container>
-      <Header>
-        <div>
-          <MarketName>{isKospi ? '코스피' : '코스닥'}</MarketName>
-          <PriceInfo>
-            <CurrentPrice>
-              {marketData.value.toFixed(2)}
-            </CurrentPrice>
-            <Change value={marketData.change}>
-              {marketData.change > 0 ? '+' : ''}
-              {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
-            </Change>
-          </PriceInfo>
-        </div>
-      </Header>
+      <Container>
+        <Header>
+          <div>
+            <MarketName>{isKospi ? '코스피' : '코스닥'}</MarketName>
+            <PriceInfo>
+              <CurrentPrice>
+                {marketData.value.toFixed(2)}
+              </CurrentPrice>
+              <Change value={marketData.change}>
+                {marketData.change > 0 ? '+' : ''}
+                {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
+              </Change>
+            </PriceInfo>
+          </div>
+        </Header>
 
-      <TimeframeButtons>
-        <TimeButton active={true}>실시간</TimeButton>
-      </TimeframeButtons>
+        <TimeframeButtons>
+          <TimeButton active={true}>실시간</TimeButton>
+        </TimeframeButtons>
 
-      <ChartContainer ref={chartRef}>
-        <ChartContent>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartData}
-              margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="rgba(240, 240, 240, 0.8)" 
-                opacity={0.5}
-              />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                interval={Math.floor(chartData.length / 15)}
-                axisLine={false}
-                tickLine={false}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 12, fill: '#8B95A1' }}
-                orientation="right"
-                axisLine={false}
-                tickLine={false}
-                width={60}
-                padding={{ top: 30, bottom: 30 }}
-              />
-              <Tooltip 
-                content={<CustomTooltip />}
-                cursor={{ 
-                  stroke: '#666', 
-                  strokeDasharray: '5 5', 
-                  strokeWidth: 1 
-                }}
-              />
-              <Line
-                type="monotoneX"
-                dataKey="value"
-                stroke="#ff4747"
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-                connectNulls={true}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContent>
-      </ChartContainer>
-    </Container>
+        <ChartContainer ref={chartRef}>
+          <ChartContent>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                  data={chartData}
+                  margin={{ top: 20, right: 40, left: 0, bottom: 20 }}
+              >
+                <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(240, 240, 240, 0.8)"
+                    opacity={0.5}
+                />
+                <XAxis
+                    dataKey="time"
+                    tick={{ fontSize: 12, fill: '#8B95A1' }}
+                    interval={11}  // 1시간 간격으로 표시
+                    tickFormatter={formatXAxis}
+                    axisLine={false}
+                    tickLine={false}
+                    padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                    domain={[
+                      dataMin => Math.floor(dataMin - 5),
+                      dataMax => Math.ceil(dataMax + 5)
+                    ]}
+                    tick={{ fontSize: 12, fill: '#8B95A1' }}
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
+                    width={60}
+                    padding={{ top: 30, bottom: 30 }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#ff4747"
+                    strokeWidth={1.5}
+                    dot={false}
+                    isAnimationActive={false}
+                    connectNulls={true}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartContent>
+        </ChartContainer>
+      </Container>
   );
 }
 

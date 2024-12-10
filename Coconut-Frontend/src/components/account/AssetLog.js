@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import React, {useState, useEffect} from 'react';
+import styled, {createGlobalStyle} from 'styled-components';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import AssetSummary from './AssetSummary';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+
   * {
     font-family: 'Noto Sans KR', sans-serif;
   }
@@ -37,17 +38,54 @@ const MainContent = styled.div`
   margin-top: 32px;
 `;
 
-const Balance = styled.div`
-  font-size: 32px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-`;
-
 const BalanceChange = styled.div`
   font-size: 14px;
   color: #666;
   margin-bottom: 32px;
+`;
+
+
+const Balance = styled.div`
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+`;
+
+const BalanceSection = styled.div`
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+`;
+
+const BalanceRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+`;
+
+const BalanceLabel = styled.span`
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+`;
+
+const BalanceValue = styled.span`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${props => props.isPositive ? '#ff4747' : '#4788ff'};
+  letter-spacing: -0.5px;
 `;
 
 const TimePeriod = styled.div`
@@ -92,159 +130,177 @@ const LoadingText = styled.div`
 `;
 
 function AssetLog() {
-  const navigate = useNavigate();
-  const [accountData, setAccountData] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('1주');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+    const [accountData, setAccountData] = useState(null);
+    const [selectedPeriod, setSelectedPeriod] = useState('1주');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
 
-        const token = localStorage.getItem('jwtToken');
-        console.log('Token exists:', !!token);
-        
-        if (!token) {
-          setError('로그인이 필요합니다.');
-          setLoading(false);
-          navigate('/login');
-          return;
-        }
+                const token = localStorage.getItem('jwtToken');
+                console.log('Token exists:', !!token);
 
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+                if (!token) {
+                    setError('로그인이 필요합니다.');
+                    setLoading(false);
+                    navigate('/login');
+                    return;
+                }
+
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // 1. 사용자 정보 가져오기
+                console.log('Fetching user info...');
+                const userResponse = await axios.get(`${API_BASE_URL}/users/me`, {headers});
+                console.log('User info response:', userResponse.data);
+
+                const userData = userResponse.data;
+                setUser(userData);
+
+                const primaryAccountId = userData.primaryAccountId;
+                console.log('Primary Account ID from user:', primaryAccountId);
+
+                if (!primaryAccountId) {
+                    console.log('계좌 없음, 계좌 생성 페이지로 이동');
+                    navigate('/account');
+                    return;
+                }
+
+                // 2. 계좌 자산 정보 가져오기
+                console.log('Fetching account assets for account:', primaryAccountId);
+                const assetsResponse = await axios.get(`${API_BASE_URL}/account/assets`, {
+                    headers,
+                    params: {
+                        accountId: primaryAccountId
+                    }
+                });
+
+                console.log('Assets response:', assetsResponse.data);
+
+                if (assetsResponse.data) {
+                    setAccountData({
+                        ...assetsResponse.data,
+                        accountId: primaryAccountId
+                    });
+                } else {
+                    setError('자산 정보를 찾을 수 없습니다.');
+                }
+
+            } catch (error) {
+                console.error('API 호출 중 에러 발생:', error);
+                if (error.response?.status === 401) {
+                    setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+                    localStorage.removeItem('jwtToken');
+                    navigate('/login');
+                } else if (error.response?.status === 404) {
+                    console.log('계좌 없음, 계좌 생성 페이지로 이동');
+                    navigate('/account');
+                } else {
+                    setError(
+                        error.response?.data?.message ||
+                        '정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.'
+                    );
+                }
+            } finally {
+                setLoading(false);
+            }
         };
 
-        // 1. 사용자 정보 가져오기
-        console.log('Fetching user info...');
-        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
-        console.log('User info response:', userResponse.data);
-        
-        const userData = userResponse.data;
-        setUser(userData);
-        
-        const primaryAccountId = userData.primaryAccountId;
-        console.log('Primary Account ID from user:', primaryAccountId);
+        fetchData();
+    }, [navigate]);
 
-        if (!primaryAccountId) {
-          console.log('계좌 없음, 계좌 생성 페이지로 이동');
-          navigate('/account');
-          return;
-        }
-
-        // 2. 계좌 자산 정보 가져오기
-        console.log('Fetching account assets for account:', primaryAccountId);
-        const assetsResponse = await axios.get(`${API_BASE_URL}/account/assets`, {
-          headers,
-          params: {
-            accountId: primaryAccountId
-          }
-        });
-
-        console.log('Assets response:', assetsResponse.data);
-        
-        if (assetsResponse.data) {
-          setAccountData({
-            ...assetsResponse.data,
-            accountId: primaryAccountId
-          });
-        } else {
-          setError('자산 정보를 찾을 수 없습니다.');
-        }
-
-      } catch (error) {
-        console.error('API 호출 중 에러 발생:', error);
-        if (error.response?.status === 401) {
-          setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
-          localStorage.removeItem('jwtToken');
-          navigate('/login');
-        } else if (error.response?.status === 404) {
-          console.log('계좌 없음, 계좌 생성 페이지로 이동');
-          navigate('/account');
-        } else {
-          setError(
-            error.response?.data?.message ||
-            '정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.'
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
+    const formatKRW = amount => {
+        if (!amount && amount !== 0) return '0원';
+        return new Intl.NumberFormat('ko-KR', {
+            style: 'currency',
+            currency: 'KRW'
+        }).format(amount).replace('₩', '') + '원';
     };
 
-    fetchData();
-  }, [navigate]);
+    const formatAccountNumber = (accountId) => {
+        return `코코넛증권 ${accountId}`;
+    };
 
-  const formatKRW = amount => {
-    if (!amount && amount !== 0) return '0원';
-    return new Intl.NumberFormat('ko-KR', {
-      style: 'currency',
-      currency: 'KRW'
-    }).format(amount).replace('₩', '') + '원';
-  };
+    if (loading) {
+        return (
+            <Container>
+                <LoadingContainer>
+                    <LoadingText>로딩중...</LoadingText>
+                </LoadingContainer>
+            </Container>
+        );
+    }
 
-  const formatAccountNumber = (accountId) => {
-    return `코코넛증권 ${accountId}`;
-  };
-
-  if (loading) {
     return (
-      <Container>
-        <LoadingContainer>
-          <LoadingText>로딩중...</LoadingText>
-        </LoadingContainer>
-      </Container>
+        <>
+            <GlobalStyle/>
+            <Container>
+                {error && <ErrorMessage>{error}</ErrorMessage>}
+
+                {accountData && (
+                    <>
+                        <AccountAlias>{accountData.accountAlias || '계좌'}</AccountAlias>
+                        <AccountTitle>{formatAccountNumber(accountData.accountId)}</AccountTitle>
+
+                        <MainContent>
+                            <Balance>
+                                {(
+                                    (accountData?.totalAssets || 0) +
+                                    (accountData?.investedAmount || 0)
+                                ).toLocaleString()}원
+                            </Balance>
+                            <BalanceChange>지난주보다 +50,000원 (2.5%)</BalanceChange>
+
+                            <TimePeriod>
+                                {['1주', '1달', '3달', '1년'].map(period => (
+                                    <TimeButton
+                                        key={period}
+                                        active={selectedPeriod === period}
+                                        onClick={() => setSelectedPeriod(period)}
+                                    >
+                                        {period}
+                                    </TimeButton>
+                                ))}
+                            </TimePeriod>
+
+                            <BalanceSection>
+                                <BalanceRow>
+                                    <BalanceLabel>투자 가능 금액</BalanceLabel>
+                                    <BalanceValue isPositive={true}>
+                                        {(
+                                            (accountData?.totalAssets || 0) -
+                                            (accountData?.reservedDeposit || 0) -
+                                            (accountData?.investedAmount || 0)
+                                        ).toLocaleString()}원
+                                    </BalanceValue>
+                                </BalanceRow>
+                                <BalanceRow>
+                                    <BalanceLabel>투자 중인 금액</BalanceLabel>
+                                    <BalanceValue isPositive={false}>
+                                        {accountData.investedAmount.toLocaleString()}원
+                                    </BalanceValue>
+                                </BalanceRow>
+                            </BalanceSection>
+                            {/*<AssetSummary*/}
+                            {/*    krwBalance={formatKRW(accountData.deposit)}*/}
+                            {/*    usdBalance="$0.00"*/}
+                            {/*    onStockClick={stockId => navigate(`/stock/${stockId}`)}*/}
+                            {/*/>*/}
+                        </MainContent>
+                    </>
+                )}
+            </Container>
+        </>
     );
-  }
-
-  return (
-    <>
-      <GlobalStyle />
-      <Container>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-
-        {accountData && (
-          <>
-            <AccountAlias>{accountData.accountAlias || '계좌'}</AccountAlias>
-            <AccountTitle>{formatAccountNumber(accountData.accountId)}</AccountTitle>
-
-            <MainContent>
-              <Balance>{formatKRW(accountData.total_assets)}</Balance>
-              <BalanceChange>지난주보다 0원 (0%)</BalanceChange>
-
-              <TimePeriod>
-                {['1주', '1달', '3달', '1년'].map(period => (
-                  <TimeButton
-                    key={period}
-                    active={selectedPeriod === period}
-                    onClick={() => setSelectedPeriod(period)}
-                  >
-                    {period}
-                  </TimeButton>
-                ))}
-              </TimePeriod>
-
-              <div style={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
-                <div>주문 가능 금액: {formatKRW(accountData.deposit)}</div>
-                <div>투자중인 금액: {formatKRW(accountData.invested_amount)}</div>
-              </div>
-
-              <AssetSummary
-                krwBalance={formatKRW(accountData.deposit)}
-                usdBalance="$0.00"
-                onStockClick={stockId => navigate(`/stock/${stockId}`)}
-              />
-            </MainContent>
-          </>
-        )}
-      </Container>
-    </>
-  );
 }
 
 export default AssetLog;

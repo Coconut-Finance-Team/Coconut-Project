@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -96,7 +96,11 @@ const TransactionAmount = styled.div`
 
 const Amount = styled.div`
   font-size: 15px;
-  color: ${props => props.isPositive ? '#4792ff' : '#666'};
+  color: ${props => {
+    if (props.transactionType === '출금') return '#000000';  // 출금은 파란색
+    if (props.transactionType === '입금') return '#4792ff';  // 입금은 빨간색
+    return '#666';  // 기본 색상
+  }};
   margin-bottom: 4px;
 `;
 
@@ -173,7 +177,7 @@ const TransactionLog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  
+
   // 상태 매핑
   const statusMapping = {
     'DEPOSIT': '입금',
@@ -189,7 +193,7 @@ const TransactionLog = () => {
         setError(null);
 
         const token = localStorage.getItem('jwtToken');
-        
+
         if (!token) {
           setError('로그인이 필요합니다.');
           setLoading(false);
@@ -201,7 +205,7 @@ const TransactionLog = () => {
           'Content-Type': 'application/json'
         };
 
-        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
+        const userResponse = await axios.get(`http://localhost:8080/api/v1/users/me`, { headers });
         setUser(userResponse.data);
         const primaryAccountId = userResponse.data.primaryAccountId;
 
@@ -273,9 +277,13 @@ const TransactionLog = () => {
     }
   };
 
-  const formatAmount = (amount) => {
+  const formatAmount = (amount, type) => {
     if (amount === undefined || amount === null) return '0원';
-    return amount.toLocaleString() + '원';
+
+    // type이 DEPOSIT이거나 status가 '입금'이면 +, WITHDRAWAL이거나 status가 '출금'이면 - 표시
+    const prefix = (type === 'DEPOSIT' || type === '입금') ? '+' :
+        (type === 'WITHDRAWAL' || type === '출금') ? '-' : '';
+    return `${prefix}${Math.abs(amount).toLocaleString()}원`;
   };
 
   const handleTransactionClick = (transaction) => {
@@ -357,28 +365,28 @@ const TransactionLog = () => {
         <Title>거래내역</Title>
 
         {error && (
-          <div style={{ 
-            color: '#dc3545', 
-            padding: '16px', 
-            marginBottom: '16px', 
-            background: '#ffebee', 
+          <div style={{
+            color: '#dc3545',
+            padding: '16px',
+            marginBottom: '16px',
+            background: '#ffebee',
             borderRadius: '8px',
-            border: '1px solid #dc3545' 
+            border: '1px solid #dc3545'
           }}>
             {error}
           </div>
         )}
 
         <FilterContainer>
-          <FilterButton 
+          <FilterButton
             active={activeFilter === '전체'}
             onClick={() => handleFilterClick('전체')}
           >전체</FilterButton>
-          <FilterButton 
+          <FilterButton
             active={activeFilter === '거래'}
             onClick={() => handleFilterClick('거래')}
           >거래</FilterButton>
-          <FilterButton 
+          <FilterButton
             active={activeFilter === '입출금'}
             onClick={() => handleFilterClick('입출금')}
           >입출금</FilterButton>
@@ -396,7 +404,7 @@ const TransactionLog = () => {
               </div>
             ) : (
               transactions.map((transaction, index) => (
-                <TransactionItem 
+                <TransactionItem
                   key={index}
                   onClick={() => handleTransactionClick(transaction)}
                 >
@@ -406,8 +414,17 @@ const TransactionLog = () => {
                     <TransactionDetail>{transaction.status}</TransactionDetail>
                   </TransactionInfo>
                   <TransactionAmount>
-                    <Amount isPositive={transaction.amount > 0}>
-                      {transaction.amount > 0 ? '+' : ''}{formatAmount(transaction.amount)}
+                    <Amount
+                        // props 디버깅을 위한 로깅
+                        transactionType={transaction.status}
+                        onClick={() => console.log('Amount props:', {
+                          status: transaction.status,
+                          type: transaction.type,
+                          amount: transaction.amount,
+                          name: transaction.name
+                        })}
+                    >
+                      {formatAmount(transaction.amount, transaction.status)}
                     </Amount>
                   </TransactionAmount>
                 </TransactionItem>

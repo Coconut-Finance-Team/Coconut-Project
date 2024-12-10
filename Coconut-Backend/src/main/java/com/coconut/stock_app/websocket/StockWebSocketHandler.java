@@ -47,9 +47,8 @@ public class StockWebSocketHandler extends TextWebSocketHandler {
                 log.info("Sent data to WebSocket (Stock Code: {}): {}", stockCode, jsonData);
             } catch (IOException e) {
                 log.error("Failed to send data to WebSocket (Stock Code: {}): {}", stockCode, e.getMessage());
+                stockSessions.remove(stockCode);  // 실패한 세션 제거
             }
-        } else {
-            log.warn("No active WebSocket session for stock code: {}", stockCode);
         }
     }
 

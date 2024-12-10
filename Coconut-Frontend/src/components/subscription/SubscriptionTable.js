@@ -125,7 +125,7 @@ const PageButton = styled.button`
 `;
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   }
@@ -168,16 +168,23 @@ function SubscriptionTable() {
       const response = await api.get('/ipo/active');
       console.log('Fetched subscriptions:', response.data);
 
-      // API 응답 데이터 변환
+      // API 응답 데이터 변환 - 백엔드 데이터 구조에 맞게 수정
       const formattedData = response.data.map(item => ({
         id: item.id,
         category: item.category || '코스닥시장',
         companyName: item.companyName,
-        underwriter: item.leadUnderwriter,  // 수정된 부분
+        underwriter: item.leadUnderwriter,
         applicationPeriod: `${new Date(item.subscriptionStartDate).toLocaleDateString()} - ${new Date(item.subscriptionEndDate).toLocaleDateString()}`,
         refundDate: new Date(item.refundDate).toLocaleDateString(),
-        maxLimit: item.maxSubscriptionLimit ? `${item.maxSubscriptionLimit.toLocaleString()}주` : '-',  // 수정된 부분
-        subscriptionPrice: item.finalOfferPrice ? `${item.finalOfferPrice.toLocaleString()}원` : '-'  // 수정된 부분
+        maxLimit: item.maxSubscriptionLimit,
+        subscriptionPrice: item.finalOfferPrice,
+        // 추가 필요한 데이터
+        subscriptionStartDate: item.subscriptionStartDate,
+        subscriptionEndDate: item.subscriptionEndDate,
+        generalOffering: item.generalOffering,
+        equalAllocation: item.equalAllocation,
+        competitionRate: item.competitionRate,
+        subscribableQuantity: item.maxSubscriptionLimit
       }));
 
       setSubscriptions(formattedData);
@@ -185,22 +192,6 @@ function SubscriptionTable() {
     } catch (err) {
       console.error('Error fetching subscriptions:', err);
       setError('청약 정보를 불러오는데 실패했습니다.');
-      
-      // 에러 시 테스트용 데이터 사용
-      if (process.env.NODE_ENV === 'development') {
-        setSubscriptions([
-          {
-            id: 1,
-            category: '코스닥시장',
-            companyName: '(주)테스트기업',
-            underwriter: '한국투자증권',
-            applicationPeriod: '2024.01.07 - 2024.01.08',
-            refundDate: '2024.01.12',
-            maxLimit: '42,000주',
-            subscriptionPrice: '5,000원',
-          },
-        ]);
-      }
     } finally {
       setLoading(false);
     }
@@ -210,31 +201,40 @@ function SubscriptionTable() {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
       navigate('/login', {
-        state: { 
+        state: {
           redirectUrl: '/subscription/apply',
-          companyData: subscription 
+          companyData: subscription
         }
       });
-    } else {
-      navigate('/subscription/apply', { 
-        state: { 
-          company: {
-            ...subscription,
-            subscriptionPrice: subscription.subscriptionPrice,
-            competitionRate: '7.89:1',
-            publicOfferingVolume: '540,000주',
-            equalDistributionVolume: '270,000주',
-            subscriptionCount: '38,271건',
-          }
-        } 
-      });
+      return;
     }
+
+    // 청약 신청 페이지로 이동할 때 전달할 데이터 구조화
+    navigate('/subscription/apply', {
+      state: {
+        company: {
+          companyName: subscription.companyName,
+          subscriptionPeriod: `${subscription.subscriptionStartDate} - ${subscription.subscriptionEndDate}`,
+          generalOffering: subscription.generalOffering,
+          equalAllocation: subscription.equalAllocation,
+          competitionRate: subscription.competitionRate,
+          price: subscription.subscriptionPrice,
+          subscribableQuantity: subscription.subscribableQuantity,
+
+          id: subscription.id,
+          category: subscription.category,
+          underwriter: subscription.underwriter,
+          refundDate: subscription.refundDate,
+          maxLimit: subscription.maxLimit
+        }
+      }
+    });
   };
 
   // 검색 필터링
   const filteredSubscriptions = subscriptions.filter(item => {
     if (!searchTerm) return true;
-    
+
     const searchValue = searchTerm.toLowerCase();
     if (searchType === 'companyName') {
       return item.companyName.toLowerCase().includes(searchValue);
@@ -255,7 +255,7 @@ function SubscriptionTable() {
             <option value="underwriter">대표주관회사</option>
           </Select>
           <SearchInput 
-            placeholder="검색어를 입력하세요..." 
+            placeholder="검색어를 입력하세요..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -271,34 +271,34 @@ function SubscriptionTable() {
           <TableWrapper>
             <Table>
               <thead>
-                <tr>
-                  <th>분류</th>
-                  <th>기업명</th>
-                  <th>대표주관회사</th>
-                  <th>청약기간</th>
-                  <th>환불일</th>
-                  <th>최고청약한도</th>
-                  <th>확정발행가</th>
-                  <th>신청</th>
-                </tr>
+              <tr>
+                <th>분류</th>
+                <th>기업명</th>
+                <th>대표주관회사</th>
+                <th>청약기간</th>
+                <th>환불일</th>
+                <th>최고청약한도</th>
+                <th>확정발행가</th>
+                <th>신청</th>
+              </tr>
               </thead>
               <tbody>
-                {filteredSubscriptions.map((item) => (
+              {filteredSubscriptions.map((item) => (
                   <tr key={item.id}>
                     <td>{item.category}</td>
                     <td>{item.companyName}</td>
                     <td>{item.underwriter}</td>
                     <td>{item.applicationPeriod}</td>
                     <td>{item.refundDate}</td>
-                    <td>{item.maxLimit}</td>
-                    <td>{item.subscriptionPrice}</td>
+                    <td>{item.maxLimit ? `${item.maxLimit.toLocaleString()}주` : '-'}</td>
+                    <td>{item.subscriptionPrice ? `${item.subscriptionPrice.toLocaleString()}원` : '-'}</td>
                     <td>
                       <ApplyButton onClick={() => handleApply(item)}>
                         신청하기
                       </ApplyButton>
                     </td>
                   </tr>
-                ))}
+              ))}
               </tbody>
             </Table>
           </TableWrapper>

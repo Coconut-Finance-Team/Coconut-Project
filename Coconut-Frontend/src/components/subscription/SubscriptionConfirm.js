@@ -117,7 +117,7 @@ const Button = styled.button`
 
 // API 설정
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   }
@@ -179,44 +179,44 @@ function SubscriptionConfirm() {
   const handleConfirm = async () => {
     try {
       setIsSubmitting(true);
-      
+
       // DTO에 맞게 데이터 구조 단순화
       const subscriptionData = {
         ipoId: company.id,  // IPO ID
         quantity: parseInt(applicationData.quantity) // 청약 수량
       };
-  
+
       // 데이터 유효성 검사 단순화
       const validateSubscriptionData = (data) => {
         const errors = [];
-        
+
         if (!data.ipoId) errors.push('종목 정보가 없습니다.');
         if (!data.quantity || data.quantity <= 0) errors.push('청약 수량이 유효하지 않습니다.');
-        
+
         return errors;
       };
-  
+
       // 데이터 유효성 검사
       const validationErrors = validateSubscriptionData(subscriptionData);
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join('\n'));
       }
-  
+
       console.log('Request payload:', subscriptionData);
-  
+
       const token = localStorage.getItem('jwtToken');
       const response = await api.post('/ipo/subscription', subscriptionData, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
       });
-  
+
       console.log('API Response structure:', {
         status: response.status,
         headers: response.headers,
         data: response.data
       });
-  
+
       navigate('/subscription/apply/complete', {
         state: {
           company,
@@ -261,18 +261,18 @@ function SubscriptionConfirm() {
             <InfoCard>
               <Table>
                 <tbody>
-                  <tr>
-                    <Th>청약종목명</Th>
-                    <Td>{company.companyName}</Td>
-                    <Th>확정발행가</Th>
-                    <Td>{company.subscriptionPrice}</Td>
-                  </tr>
-                  <tr>
-                    <Th>청약기간</Th>
-                    <Td>{company.applicationPeriod}</Td>
-                    <Th>경쟁률</Th>
-                    <Td>{company.competitionRate}</Td>
-                  </tr>
+                <tr>
+                  <Th>청약종목명</Th>
+                  <Td>테크놀로지솔루션</Td>
+                  <Th>확정발행가</Th>
+                  <Td>35,000원</Td>
+                </tr>
+                <tr>
+                  <Th>청약기간</Th>
+                  <Td>2024. 12. 6. - 2024. 12. 8.</Td>
+                  <Th>경쟁률</Th>
+                  <Td>7.89:1</Td>
+                </tr>
                 </tbody>
               </Table>
             </InfoCard>
@@ -291,9 +291,9 @@ function SubscriptionConfirm() {
                   </tr>
                   <tr>
                     <Th>청약증거금</Th>
-                    <Td>{applicationData.amount.toLocaleString()}원</Td>
+                    <Td>52,500원</Td>
                     <Th>청약수수료</Th>
-                    <Td>{applicationData.fee.toLocaleString()}원</Td>
+                    <Td>2,000원</Td>
                   </tr>
                 </tbody>
               </Table>

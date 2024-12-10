@@ -10,7 +10,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/v1/admin/dashboard');
+        const response = await fetch('http://localhost:8080/api/v1/admin/dashboard');
         if (!response.ok) {
           throw new Error('데이터를 불러오는데 실패했습니다');
         }

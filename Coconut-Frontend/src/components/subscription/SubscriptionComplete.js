@@ -115,15 +115,15 @@ function SubscriptionComplete() {
                 </tr>
                 <tr>
                   <Th>종목</Th>
-                  <Td>주식회사 에이펙스</Td>
+                  <Td>테크놀로지솔루션</Td>
                 </tr>
                 <tr>
                   <Th>청약수량</Th>
-                  <Td>50주</Td>
+                  <Td>3주</Td>
                 </tr>
                 <tr>
                   <Th>청약증거금</Th>
-                  <Td>400,000원</Td>
+                  <Td>52,500원</Td>
                 </tr>
                 <tr>
                   <Th>청약수수료</Th>

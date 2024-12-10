@@ -202,10 +202,13 @@ const UserDetail = ({ user, onBack }) => {
 
   const fetchUserDetail = async () => {
     const token = localStorage.getItem('jwtToken');
-    
+
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8080/api/v1/admin/read/user/${user.uuid}`, {
+      console.log('Fetching user detail for UUID:', user.uuid); // UUID 확인
+      console.log('Using token:', token); // 토큰 확인
+
+      const response = await fetch('http://localhost:8080/api/v1/admin/read/user/${user.uuid}', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -213,6 +216,8 @@ const UserDetail = ({ user, onBack }) => {
       });
 
       if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Response error:', response.status, errorData); // 에러 응답 확인
         throw new Error('사용자 상세 정보를 불러오는데 실패했습니다.');
       }
 
@@ -258,7 +263,7 @@ const UserDetail = ({ user, onBack }) => {
     setSuspendLoading(true);
   
     try {
-      const response = await fetch(`/api/v1/admin/suspend/user/${user.uuid}`, {
+      const response = await fetch(`http://localhost:8080/api/v1/admin/suspend/user/${user.uuid}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

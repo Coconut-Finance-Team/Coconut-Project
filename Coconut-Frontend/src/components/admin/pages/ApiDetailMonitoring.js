@@ -163,7 +163,7 @@ const styles = `
 
 const ApiDetailMonitoring = ({ onBack, api }) => {
     const apiMetrics = {
-      endpoint: api?.endpoint || '/api/v1/trade',
+      endpoint: api?.endpoint || 'http://localhost:8080/api/v1/trade',
       callRate: {
         value: api?.requests || '824회/초',
         trend: '+20% ↑',

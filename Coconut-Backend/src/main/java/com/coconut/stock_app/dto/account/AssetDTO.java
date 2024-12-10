@@ -16,5 +16,6 @@ public class AssetDTO {
     private String accountId;
     private BigDecimal totalAssets;
     private BigDecimal deposit;
+    private BigDecimal reservedDeposit;
     private BigDecimal investedAmount;
 }

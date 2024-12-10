@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { createGlobalStyle } from 'styled-components';
 import dayjs from 'dayjs';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -117,16 +117,29 @@ function Sales() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
-  // Transform API data to match component's expected format
   const transformSalesData = (salesData) => {
-    return salesData.map(sale => ({
-      id: sale.id,
-      date: dayjs(sale.saleDate).format('YYYY-MM-DD HH:mm:ss'),
-      name: sale.stockName,
-      quantity: sale.quantity,
-      profit: (sale.salePricePerShare - sale.purchasePricePerShare) * sale.quantity,
-      profit_rate: ((sale.salePricePerShare - sale.purchasePricePerShare) / sale.purchasePricePerShare * 100).toFixed(2)
-    }));
+    return salesData.map(sale => {
+      // BigDecimal 값들을 숫자로 변환
+      const purchasePrice = parseFloat(sale.purchasePricePerShare);
+      const salePrice = parseFloat(sale.salePricePerShare);
+      const quantity = sale.saleQuantity;
+
+      // 수익 계산
+      const profit = (salePrice - purchasePrice) * quantity;
+
+      // 수익률 계산
+      const profitRate = sale.profitRate ? parseFloat(sale.profitRate) :
+          ((salePrice - purchasePrice) / purchasePrice * 100);
+
+      return {
+        id: sale.id,
+        date: dayjs(sale.transactionDate).format('YYYY-MM-DD HH:mm:ss'),
+        name: sale.stockName,
+        quantity: quantity,
+        profit: profit,
+        profit_rate: profitRate.toFixed(2)
+      };
+    });
   };
 
   useEffect(() => {
@@ -149,7 +162,7 @@ function Sales() {
         };
 
         // 1. 사용자 정보 가져오기
-        const userResponse = await axios.get(`${API_BASE_URL}/users/me`, { headers });
+        const userResponse = await axios.get(`http://localhost:8080/api/v1/users/me`, { headers });
         setUser(userResponse.data);
         const primaryAccountId = userResponse.data.primaryAccountId;
 
@@ -160,7 +173,7 @@ function Sales() {
         }
 
         // 2. 판매 수익 정보 가져오기
-        const response = await axios.get(`${API_BASE_URL}/account/sales-profit`, {
+        const response = await axios.get(`http://localhost:8080/api/v1/account/sales-profit`, {
           headers,
           params: {
             accountId: primaryAccountId,
@@ -169,12 +182,15 @@ function Sales() {
           }
         });
 
-        // Transform the data to match your component's expected format
         const transformedOrders = transformSalesData(response.data);
+        console.log(response.data);
+
         setOrders(transformedOrders);
-        
-        // Calculate total profit
-        const total = transformedOrders.reduce((acc, order) => acc + order.profit, 0);
+
+        const total = transformedOrders.reduce((acc, order) => {
+          const profitNum = parseFloat(order.profit) || 0;
+          return acc + profitNum;
+        }, 0);
         setTotalProfit(total);
 
       } catch (error) {

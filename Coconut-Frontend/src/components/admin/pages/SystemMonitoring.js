@@ -30,7 +30,7 @@ const styles = `
 `;
 
 const SystemMonitoring = () => {
-  const grafanaUrl = 'http://af09f59680ac947daa55253ebecdee73-1757876400.ap-northeast-2.elb.amazonaws.com/d/4b545447f/1-kubernetes-all-in-one-cluster-monitoring-kr?var-duration=5m&orgId=1&from=2024-12-03T00:09:10.873Z&to=2024-12-03T03:09:10.873Z&var-node=&var-instance=10.0.9.167:9100&var-namespace=&var-pod=&refresh=5s&theme=light';
+  const grafanaUrl = 'http://a071b631c194145ab8c652da2b317b71-1037840824.ap-northeast-2.elb.amazonaws.com/d/4b545447f/1-kubernetes-all-in-one-cluster-monitoring-kr?var-duration=5m&orgId=1&from=2024-12-08T13:54:05.809Z&to=2024-12-08T16:54:05.809Z&var-node=&var-instance=10.0.3.135:9100&var-namespace=&var-pod=&refresh=5s';
 
   return (
     <>

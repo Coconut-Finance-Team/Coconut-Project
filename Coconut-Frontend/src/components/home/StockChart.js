@@ -1,228 +1,259 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  LineController,
-  Tooltip,
-} from 'chart.js';
-import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
+import React, { useEffect, useRef } from 'react';
+import { createChart } from 'lightweight-charts';
 
-// Chart.js 컴포넌트 등록
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  LineController,
-  BarElement,
-  CandlestickController,
-  CandlestickElement,
-  Tooltip
-);
+const StockChart = () => {
+  const priceChartRef = useRef(null);
+  const volumeChartRef = useRef(null);
+  const priceChart = useRef(null);
+  const volumeChart = useRef(null);
+  const candleSeries = useRef(null);
+  const volumeSeries = useRef(null);
+  const animationRef = useRef(null);
+  const currentCandle = useRef(null);
+  const isDisposed = useRef(false);
 
-// 시간 프레임 옵션
-const TIMEFRAMES = [
-  { key: '1min', label: '1분', minutes: 1 },
-  { key: '10min', label: '10분', minutes: 10 },
-];
+  const generateHistoricalData = () => {
+    const data = [];
+    const startTime = new Date();
+    startTime.setHours(9, 0, 0, 0);
+    const endTime = new Date();
+    endTime.setHours(13, 10, 0, 0);
 
-// 차트 기본 데이터 생성 함수
-const generateInitialData = () => {
-  const data = [];
-  const basePrice = 175000;
-  const now = new Date();
+    let currentPrice = 173000;
+    let currentTime = startTime;
 
-  for (let i = 0; i < 100; i++) {
-    const time = new Date(now.getTime() - (99 - i) * 60000);
-    const variation = (Math.random() - 0.5) * 1000;
-    const open = basePrice + variation;
-    const close = open + (Math.random() - 0.5) * 500;
-    const high = Math.max(open, close) + Math.random() * 200;
-    const low = Math.min(open, close) - Math.random() * 200;
+    while (currentTime <= endTime) {
+      const open = currentPrice;
+      const high = open + Math.random() * 100;
+      const low = open - Math.random() * 100;
+      const close = low + Math.random() * (high - low);
 
-    data.push({
-      time: time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-      open,
-      high,
-      low,
-      close,
-      volume: Math.floor(Math.random() * 1000),
-      timestamp: time.getTime(),
-    });
-  }
-  return data;
-};
-
-const StockChart = ({ stockId }) => {
-  const [timeframe, setTimeframe] = useState(TIMEFRAMES[0]); // 시간 프레임
-  const [data, setData] = useState(generateInitialData()); // 기본 데이터
-  const chartRef = useRef(null); // 차트 캔버스 참조
-  const chartInstance = useRef(null); // Chart.js 인스턴스
-  const containerRef = useRef(null); // 컨테이너 참조
-  const wsRef = useRef(null); // WebSocket 참조
-
-  // 창 크기 조정 핸들러
-  const handleResize = () => {
-    if (containerRef.current && chartRef.current && chartInstance.current) {
-      const container = containerRef.current;
-      chartRef.current.width = container.clientWidth;
-      chartRef.current.height = container.clientHeight;
-      chartInstance.current.resize();
-    }
-  };
-
-  // WebSocket 연결
-  const connectWebSocket = () => {
-    if (!stockId) return;
-
-    console.log(`Connecting WebSocket for stock ${stockId}...`);
-    const ws = new WebSocket(`ws://localhost:8080/ws/stock/${stockId}`);
-
-    ws.onopen = () => {
-      console.log('WebSocket Connected Successfully');
-    };
-
-    ws.onmessage = (event) => {
-      const newData = JSON.parse(event.data);
-      console.log('WebSocket message received:', newData);
-
-      setData((prevData) => {
-        const updatedData = [...prevData];
-        const lastCandle = updatedData[updatedData.length - 1];
-
-        if (lastCandle && isSameTimeframe(lastCandle.timestamp, newData.timestamp)) {
-          // 기존 캔들 업데이트
-          lastCandle.high = Math.max(lastCandle.high, newData.currentPrice);
-          lastCandle.low = Math.min(lastCandle.low, newData.currentPrice);
-          lastCandle.close = newData.currentPrice;
-          lastCandle.volume += newData.contingentVol || 0;
-        } else {
-          // 새 캔들 추가
-          updatedData.push({
-            time: new Date(newData.timestamp).toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-            open: newData.currentPrice,
-            high: newData.currentPrice,
-            low: newData.currentPrice,
-            close: newData.currentPrice,
-            volume: newData.contingentVol || 0,
-            timestamp: newData.timestamp,
-          });
-
-          // 최근 100개 데이터 유지
-          if (updatedData.length > 100) {
-            updatedData.shift();
-          }
-        }
-
-        return updatedData;
+      data.push({
+        time: Math.floor(currentTime.getTime() / 1000),
+        open,
+        high,
+        low,
+        close,
+        volume: Math.floor(Math.random() * 1000) + 500
       });
-    };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket Error:', error);
-    };
+      currentPrice = close;
+      currentTime = new Date(currentTime.getTime() + 60000);
+    }
 
-    ws.onclose = () => {
-      console.log('WebSocket Disconnected, attempting to reconnect...');
-      setTimeout(connectWebSocket, 3000);
-    };
-
-    wsRef.current = ws;
+    return data;
   };
 
-  // 데이터 처리
-  const isSameTimeframe = (timestamp1, timestamp2) => {
-    const date1 = new Date(timestamp1);
-    const date2 = new Date(timestamp2);
-    const timeDiff = Math.abs(date1 - date2);
-    return timeDiff < timeframe.minutes * 60000;
-  };
+  const createChartOptions = (height) => ({
+    height,
+    timeScale: {
+      timeVisible: true,
+      secondsVisible: false,
+      tickMarkFormatter: (time) => {
+        const date = new Date(time * 1000);
+        return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+      },
+    },
+    layout: {
+      background: { color: '#ffffff' },
+      textColor: '#333',
+    },
+    grid: {
+      vertLines: { color: '#f0f3fa' },
+      horzLines: { color: '#f0f3fa' },
+    },
+    rightPriceScale: {
+      scaleMargins: {
+        top: 0.2,
+        bottom: 0.2,
+      },
+      borderVisible: false,
+    },
+  });
 
-  const calculateMA = (data, period) => {
-    return data.map((_, index) => {
-      const start = Math.max(0, index - period + 1);
-      const values = data.slice(start, index + 1).map((d) => d.close);
-      return values.reduce((sum, val) => sum + val, 0) / values.length;
+  const syncCharts = () => {
+    if (!priceChart.current || !volumeChart.current) return;
+
+    let timeScaleSync = false;
+
+    const syncHandler = (src, dst) => {
+      if (timeScaleSync) return;
+      timeScaleSync = true;
+      dst.timeScale().setVisibleRange(src.timeScale().getVisibleRange());
+      timeScaleSync = false;
+    };
+
+    priceChart.current.timeScale().subscribeVisibleTimeRangeChange(() => {
+      syncHandler(priceChart.current, volumeChart.current);
+    });
+
+    volumeChart.current.timeScale().subscribeVisibleTimeRangeChange(() => {
+      syncHandler(volumeChart.current, priceChart.current);
     });
   };
 
-  // 차트 업데이트
-  useEffect(() => {
-    if (!chartRef.current || !data || data.length === 0) return;
+  const initChart = () => {
+    if (!priceChartRef.current || !volumeChartRef.current || isDisposed.current) return;
 
-    const ctx = chartRef.current.getContext('2d');
+    priceChart.current = createChart(priceChartRef.current, {
+      ...createChartOptions(300),
+      width: priceChartRef.current.clientWidth,
+    });
 
-    if (chartInstance.current) {
-      chartInstance.current.destroy();
-    }
+    volumeChart.current = createChart(volumeChartRef.current, {
+      ...createChartOptions(100),
+      width: volumeChartRef.current.clientWidth,
+    });
 
-    const recentData = data.slice(-100);
-    const chartData = recentData.map((d) => ({
-      x: d.time,
-      o: d.open,
-      h: d.high,
-      l: d.low,
-      c: d.close,
+    candleSeries.current = priceChart.current.addCandlestickSeries({
+      upColor: '#ff4747',
+      downColor: '#4788ff',
+      borderUpColor: '#ff4747',
+      borderDownColor: '#4788ff',
+      wickUpColor: '#ff4747',
+      wickDownColor: '#4788ff',
+      priceFormat: {
+        type: 'price',
+        precision: 0,
+        minMove: 400,
+      },
+    });
+
+    volumeSeries.current = volumeChart.current.addHistogramSeries({
+      color: '#26a69a',
+      priceFormat: { type: 'volume' },
+    });
+
+    const historicalData = generateHistoricalData();
+    candleSeries.current.setData(historicalData);
+
+    const volumeData = historicalData.map(d => ({
+      time: d.time,
+      value: d.volume,
+      color: d.close >= d.open ? 'rgba(255, 71, 71, 0.3)' : 'rgba(71, 136, 255, 0.3)'
     }));
 
-    const ma5 = calculateMA(recentData, 5);
-    const ma10 = calculateMA(recentData, 10);
-    const ma20 = calculateMA(recentData, 20);
+    volumeSeries.current.setData(volumeData);
 
-    chartInstance.current = new Chart(ctx, {
-      type: 'candlestick',
-      data: {
-        datasets: [
-          {
-            label: '주가',
-            data: chartData,
-            color: { up: '#00FF00', down: '#FF0000', unchanged: '#999999' },
-          },
-          {
-            type: 'line',
-            label: 'MA5',
-            data: ma5,
-            borderColor: '#FF3333',
-            borderWidth: 1,
-          },
-          {
-            type: 'line',
-            label: 'MA10',
-            data: ma10,
-            borderColor: '#3333FF',
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { type: 'category', grid: { display: false } },
-          y: { position: 'right' },
-        },
-      },
-    });
-  }, [data]);
+    syncCharts();
+
+    const startTime = new Date();
+    startTime.setHours(13, 11, 0, 0);
+
+    currentCandle.current = {
+      time: Math.floor(startTime.getTime() / 1000),
+      open: historicalData[historicalData.length - 1].close,
+      high: historicalData[historicalData.length - 1].close,
+      low: historicalData[historicalData.length - 1].close,
+      close: historicalData[historicalData.length - 1].close,
+      volume: 0
+    };
+
+    if (!isDisposed.current) {
+      startAnimation();
+    }
+  };
+
+  const startAnimation = () => {
+    const updateCurrentCandle = () => {
+      if (isDisposed.current || !currentCandle.current || !candleSeries.current) return;
+
+      const now = new Date();
+      const currentMinuteTimestamp = Math.floor(now.getTime() / 1000 / 60) * 60;
+
+      if (currentCandle.current.time < currentMinuteTimestamp) {
+        const newCandle = {
+          time: currentMinuteTimestamp,
+          open: currentCandle.current.close,
+          high: currentCandle.current.close,
+          low: currentCandle.current.close,
+          close: currentCandle.current.close,
+          volume: 0
+        };
+        currentCandle.current = newCandle;
+      }
+
+      const change = (Math.random() - 0.5) * 50;
+      const newPrice = currentCandle.current.close + change;
+
+      currentCandle.current.close = newPrice;
+      currentCandle.current.high = Math.max(currentCandle.current.high, newPrice);
+      currentCandle.current.low = Math.min(currentCandle.current.low, newPrice);
+      currentCandle.current.volume += Math.floor(Math.random() * 50);
+
+      if (!isDisposed.current) {
+        candleSeries.current.update(currentCandle.current);
+        volumeSeries.current.update({
+          time: currentCandle.current.time,
+          value: currentCandle.current.volume,
+          color: currentCandle.current.close >= currentCandle.current.open ?
+              'rgba(255, 71, 71, 0.3)' : 'rgba(71, 136, 255, 0.3)'
+        });
+
+        animationRef.current = requestAnimationFrame(() => {
+          if (!isDisposed.current) {
+            setTimeout(updateCurrentCandle, 1000);
+          }
+        });
+      }
+    };
+
+    updateCurrentCandle();
+  };
 
   useEffect(() => {
-    connectWebSocket();
-    return () => {
-      if (wsRef.current) wsRef.current.close();
+    isDisposed.current = false;
+    initChart();
+
+    const handleResize = () => {
+      if (isDisposed.current) return;
+
+      if (priceChart.current) {
+        priceChart.current.applyOptions({
+          width: priceChartRef.current.clientWidth,
+        });
+      }
+
+      if (volumeChart.current) {
+        volumeChart.current.applyOptions({
+          width: volumeChartRef.current.clientWidth,
+        });
+      }
     };
-  }, [stockId]);
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      isDisposed.current = true;
+
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+
+      window.removeEventListener('resize', handleResize);
+
+      if (priceChart.current) {
+        priceChart.current.remove();
+        priceChart.current = null;
+      }
+
+      if (volumeChart.current) {
+        volumeChart.current.remove();
+        volumeChart.current = null;
+      }
+
+      candleSeries.current = null;
+      volumeSeries.current = null;
+      currentCandle.current = null;
+    };
+  }, []);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '400px' }}>
-      <canvas ref={chartRef} />
-    </div>
+      <div className="flex flex-col gap-1">
+        <div ref={priceChartRef} className="w-full h-[300px]" />
+        <div ref={volumeChartRef} className="w-full h-[100px]" />
+      </div>
   );
 };
 

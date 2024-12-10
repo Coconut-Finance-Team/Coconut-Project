@@ -11,7 +11,7 @@ registerLocale('ko', ko);
 
 // API 관련 설정
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   }

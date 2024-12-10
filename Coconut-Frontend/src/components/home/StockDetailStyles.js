@@ -77,13 +77,13 @@ export const PriceArea = styled.div`
 export const CurrentPrice = styled.div`
   font-size: 32px;
   font-weight: 700;
-  color: ${props => props.change > 0 ? '#ff4747' : props.change < 0 ? '#4788ff' : '#222222'};
+  color: ${props => props.$change > 0 ? '#E22D2D' : props.$change < 0 ? '#1E5EFF' : '#222222'};
   text-align: right;
 `;
 
 export const PriceChange = styled.div`
   font-size: 15px;
-  color: ${props => props.value > 0 ? '#ff4747' : props.value < 0 ? '#4788ff' : '#222222'};
+  color: ${props => props.$value > 0 ? '#E22D2D' : props.$value < 0 ? '#1E5EFF' : '#222222'};
   text-align: right;
   margin-top: 4px;
 `;
@@ -100,9 +100,9 @@ export const TabButton = styled.button`
   border: none;
   background: none;
   font-size: 15px;
-  font-weight: ${props => props.active ? '600' : '400'};
-  color: ${props => props.active ? '#222222' : '#888888'};
-  border-bottom: 2px solid ${props => props.active ? '#222222' : 'transparent'};
+  font-weight: ${props => props.active === 'true' ? '600' : '400'};
+  color: ${props => props.active === 'true' ? '#222222' : '#888888'};
+  border-bottom: 2px solid ${props => props.active === 'true' ? '#222222' : 'transparent'};
   cursor: pointer;
   transition: all 0.15s;
 
@@ -120,41 +120,18 @@ export const TimeframeButtons = styled.div`
 
 export const TimeButton = styled.button`
   padding: 8px 16px;
-  border: 1px solid ${props => props.active ? 'transparent' : '#e0e0e0'};
-  background: ${props => props.active ? '#2b2b2b' : '#ffffff'};
-  color: ${props => props.active ? '#ffffff' : '#666666'};
+  border: 1px solid ${props => props.$active ? '#1E5EFF' : '#E0E0E0'};
+  background: ${props => props.$active ? '#F5F8FF' : '#ffffff'};
+  color: ${props => props.$active ? '#1E5EFF' : '#666666'};
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: ${props => props.$active ? '600' : '500'};
   transition: all 0.15s;
 
   &:hover {
-    background: ${props => props.active ? '#2b2b2b' : '#f8f8f8'};
+    background: ${props => props.$active ? '#F5F8FF' : '#F8F8F8'};
   }
-`;
-
-export const ChartsContainer = styled.div`
-  width: 100%;
-  height: 600px;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-  
-  @media (max-width: 768px) {
-    height: 450px;
-  }
-`;
-
-export const PriceChartContainer = styled.div`
-  width: 100%;
-  flex: 0.7;
-`;
-
-export const VolumeChartContainer = styled.div`
-  width: 100%;
-  flex: 0.3;
-  margin-top: 1px;
 `;
 
 export const OrderBoxContainer = styled.div`
@@ -173,28 +150,40 @@ export const OrderBoxContainer = styled.div`
   top: 20px;
 `;
 
+
 export const OrderTypeContainer = styled.div`
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  padding: 4px;
+  background: #F5F5F5;
+  border-radius: 10px;
 `;
 
 export const OrderTypeButton = styled.button`
   flex: 1;
-  height: 48px;
+  height: 44px;
   border: none;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
-  background: ${props => props.active ? (props.buy ? '#ff4747' : '#4788ff') : '#f8f8f8'};
-  color: ${props => props.active ? '#ffffff' : '#666666'};
+  background: ${props => props.$active ?
+          (props.$buy ? '#ffffff' : '#ffffff') :
+          'transparent'};
+  color: ${props => props.$active ?
+          (props.$buy ? '#E22D2D' : '#1E5EFF') :
+          '#666666'};
+  box-shadow: ${props => props.$active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none'};
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: ${props => props.active ? 
-      (props.buy ? '#ff3b3b' : '#3b7bff') : 
-      '#f0f0f0'};
+    background: ${props => props.$active ? '#ffffff' : '#EEEEEE'};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 
@@ -258,17 +247,25 @@ export const QuantityButtons = styled.div`
 export const QuantityButton = styled.button`
   flex: 1;
   height: 36px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #E0E0E0;
   border-radius: 6px;
   background: #ffffff;
-  color: #666666;
+  color: #1E5EFF;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover {
-    background: #f8f8f8;
+    background: #F5F8FF;
+    border-color: #1E5EFF;
+  }
+
+  &:disabled {
+    color: #999999;
+    background: #F5F5F5;
+    border-color: #E0E0E0;
+    cursor: not-allowed;
   }
 `;
 
@@ -302,14 +299,19 @@ export const OrderButton = styled.button`
   height: 52px;
   border: none;
   border-radius: 8px;
-  background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff4747' : '#4788ff')};
+  background: ${props => props.$disabled ? '#E0E0E0' :
+          (props.$buy ? '#E22D2D' : '#1E5EFF')};
   color: #ffffff;
   font-size: 16px;
   font-weight: 600;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: all 0.15s;
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s ease;
 
   &:hover {
-    background: ${props => props.disabled ? '#e0e0e0' : (props.buy ? '#ff3b3b' : '#3b7bff')};
+    background: ${props => props.$disabled ? '#E0E0E0' :
+            (props.$buy ? '#D42020' : '#1751E3')};
   }
 `;
+
+
+export default {};

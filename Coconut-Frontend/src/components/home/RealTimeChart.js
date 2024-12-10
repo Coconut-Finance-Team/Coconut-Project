@@ -132,6 +132,7 @@ const StockInfo = styled.div`
     border-radius: 12px;  /* 로고 모서리 약간만 둥글게 */
   }
 `;
+
 const RealTimeChart = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -157,9 +158,9 @@ const RealTimeChart = () => {
       rank: 1, 
       name: 'SK하이닉스', 
       image: skImage, 
-      price: 33250, 
-      change: 5450, 
-      changePercent: 19.6, 
+      price: 172500,
+      change: -5900,
+      changePercent: 3.4,
       volume: '15억원', 
       shares: '1,546,379주' 
     },
@@ -169,11 +170,11 @@ const RealTimeChart = () => {
       rank: 2, 
       name: '삼성전자', 
       image: samsungImage, 
-      price: 58000, 
-      change: 700, 
-      changePercent: 1.2, 
-      volume: '13억원', 
-      shares: '1,223,055주' 
+      price: 54100,
+      change: 400,
+      changePercent: 0.7,
+      volume: '5.2조원',
+      shares: '1,644,692주'
     },
     { 
       id: 'lg', 
@@ -181,11 +182,11 @@ const RealTimeChart = () => {
       rank: 3, 
       name: 'LG전자', 
       image: lgImage, 
-      price: 10750, 
-      change: 1050, 
-      changePercent: 10.8, 
+      price: 85100,
+      change: -900,
+      changePercent: 1.0,
       volume: '6.2억원', 
-      shares: '858,274주' 
+      shares: '958,274주'
     },
   ];
 

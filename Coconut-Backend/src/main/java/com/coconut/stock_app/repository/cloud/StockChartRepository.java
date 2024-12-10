@@ -1,6 +1,7 @@
 package com.coconut.stock_app.repository.cloud;
 
 import com.coconut.stock_app.entity.cloud.StockChart;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,4 +27,24 @@ public interface StockChartRepository extends JpaRepository<StockChart, Long> {
                 ORDER BY sc.time DESC
             """)
     Page<StockChart> findStockChartsByStockCode(@Param("stockCode") String stockCode, Pageable pageable);
+
+    @Query("SELECT s FROM StockChart s WHERE s.stock.stockCode = :stockCode " +
+            "AND s.time BETWEEN :startTime AND :endTime " +
+            "AND DATE(s.time) = :fixedDate " +
+            "ORDER BY s.time")
+    List<StockChart> findByStockCodeAndTimeRangeForFixedDate(
+            @Param("stockCode") String stockCode,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("fixedDate") LocalDate fixedDate
+    );
+
+    @Query("SELECT s FROM StockChart s WHERE s.stock.stockCode = :stockCode " +
+            "AND s.time BETWEEN :startTime AND :endTime " +
+            "ORDER BY s.time")
+    List<StockChart> findByStockCodeAndDate(
+            @Param("stockCode") String stockCode,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }

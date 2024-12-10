@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
@@ -63,7 +63,7 @@ const Row = styled.div`
   justify-content: space-between;
   padding: 16px 0;
   border-bottom: 1px solid #f2f2f2;
-  
+
   &:last-child {
     border-bottom: none;
   }
@@ -153,7 +153,7 @@ const Checkbox = styled.input.attrs({ type: 'checkbox' })`
   cursor: pointer;
   border: 2px solid #ddd;
   border-radius: 4px;
-  
+
   &:checked {
     background-color: #4174f6;
     border-color: #4174f6;
@@ -205,7 +205,7 @@ const Button = styled.button`
   font-weight: 500;
   cursor: pointer;
   font-family: 'Noto Sans KR', sans-serif;
-  
+
   ${props => props.primary ? `
     background: #4174f6;
     color: white;
@@ -234,6 +234,54 @@ function SubscriptionApply() {
     complete: false
   });
   const [quantity, setQuantity] = useState('');
+  const [accountData, setAccountData] = useState({
+    accountId: '',
+    deposit: 0,
+    investedAmount: 0
+  });
+
+  const calculateMaxQuantity = () => {
+    const depositAmount = accountData.deposit;
+    const pricePerShare = company.price || 35000; // 35,000원으로 수정
+    const marginRate = 0.5;
+    return Math.floor(depositAmount / (pricePerShare * marginRate));
+  };
+
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+          alert('로그인이 필요합니다.');
+          return;
+        }
+
+        const response = await fetch('http://localhost:8080/api/v1/account/assets', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('계좌 정보를 불러오는데 실패했습니다');
+        }
+
+        const data = await response.json();
+        setAccountData({
+          accountId: data.accountId,
+          deposit: data.deposit || 0,
+          investedAmount: data.investedAmount || 0
+        });
+
+      } catch (err) {
+        console.error('Error:', err);
+        alert(err.message);
+      }
+    };
+
+    fetchAccountData();
+  }, []);
 
   if (!company) {
     return <div>잘못된 접근입니다.</div>;
@@ -263,23 +311,23 @@ function SubscriptionApply() {
       alert('투자설명서 확인 여부를 선택해주세요.');
       return false;
     }
-  
+
     if (hasReadDescription === 'no') {
       alert('투자설명서 확인이 필요합니다.');
       return false;
     }
-    
+
     const requiredAgreements = {
       investmentDescription: agreements.investmentDescription,
       download1: agreements.download1,
       complete: agreements.complete
     };
-    
+
     if (!Object.values(requiredAgreements).every(v => v)) {
       alert('모든 항목에 동의해주세요.');
       return false;
     }
-    
+
     return true;
   };
 
@@ -315,7 +363,7 @@ function SubscriptionApply() {
             company,
             applicationData: {
               quantity: parseInt(quantity),
-              amount: parseInt(quantity) * 340000,
+              amount: parseInt(quantity) * 35000, // 35,000원으로 수정
               fee: 2000,
               account: '46309613-01'
             }
@@ -326,156 +374,159 @@ function SubscriptionApply() {
   };
 
   return (
-    <ModalOverlay onClick={() => navigate(-1)}>
-      <ModalContainer onClick={e => e.stopPropagation()}>
-        <ModalContent>
-          {!showForm ? (
-            <>
-              <Title>공모주 신청</Title>
-              <InfoCard>
-                <Row>
-                  <Label>청약종목명</Label>
-                  <Value>{company.companyName || '(주)회사1'}</Value>
-                </Row>
-                <Row>
-                  <Label>청약기간</Label>
-                  <Value>2024.01.07 - 2024.01.08</Value>
-                </Row>
-                <Row>
-                  <Label>일반공모물량</Label>
-                  <Value>540,000주</Value>
-                </Row>
-                <Row>
-                  <Label>균등배정물량</Label>
-                  <Value>270,000주</Value>
-                </Row>
-                <Row>
-                  <Label>경쟁률</Label>
-                  <Value>7.89:1</Value>
-                </Row>
-                <Row>
-                  <Label>확정발행가</Label>
-                  <Value>340,000원</Value>
-                </Row>
-              </InfoCard>
+      <ModalOverlay onClick={() => navigate(-1)}>
+        <ModalContainer onClick={e => e.stopPropagation()}>
+          <ModalContent>
+            {!showForm ? (
+                <>
+                  <Title>공모주 신청</Title>
+                  <InfoCard>
+                      <Row>
+                        <Label>청약종목명</Label>
+                        <Value>테크놀로지솔루션</Value>
+                      </Row>
+                      <Row>
+                        <Label>청약기간</Label>
+                        <Value>2024. 12. 6. - 2024. 12. 8.</Value>
+                      </Row>
+                      <Row>
+                        <Label>일반공모물량</Label>
+                        <Value>540,000주</Value>
+                      </Row>
+                      <Row>
+                        <Label>균등배정물량</Label>
+                        <Value>270,000주</Value>
+                      </Row>
+                      <Row>
+                        <Label>경쟁률</Label>
+                        <Value>7.89:1</Value>
+                      </Row>
+                      <Row>
+                        <Label>확정발행가</Label>
+                        <Value>35,000원</Value>
+                      </Row>
+                    </InfoCard>
 
-              <InfoCard>
-                <SubTitle>설명서 교부 및 동의</SubTitle>
-                <RadioGroup>
-                  <RadioQuestion>투자설명서를 확인하셨습니까?</RadioQuestion>
-                  <RadioLabelContainer>
-                    <RadioLabel>
-                      <input
-                        type="radio"
-                        name="description"
-                        onChange={() => handleRadioChange('yes')}
-                      />
-                      예
-                    </RadioLabel>
-                    <RadioLabel>
-                      <input
-                        type="radio"
-                        name="description"
-                        onChange={() => handleRadioChange('no')}
-                      />
-                      아니오
-                    </RadioLabel>
-                  </RadioLabelContainer>
-                </RadioGroup>
+                  <InfoCard>
+                    <SubTitle>설명서 교부 및 동의</SubTitle>
+                    <RadioGroup>
+                      <RadioQuestion>투자설명서를 확인하셨습니까?</RadioQuestion>
+                      <RadioLabelContainer>
+                        <RadioLabel>
+                          <input
+                              type="radio"
+                              name="description"
+                              onChange={() => handleRadioChange('yes')}
+                          />
+                          예
+                        </RadioLabel>
+                        <RadioLabel>
+                          <input
+                              type="radio"
+                              name="description"
+                              onChange={() => handleRadioChange('no')}
+                          />
+                          아니오
+                        </RadioLabel>
+                      </RadioLabelContainer>
+                    </RadioGroup>
 
-                <CheckboxGroup>
-                  <CheckboxLabel>
-                    <Checkbox
-                      checked={agreements.investmentDescription}
-                      onChange={() => handleAgreementChange('investmentDescription')}
+                    <CheckboxGroup>
+                      <CheckboxLabel>
+                        <Checkbox
+                            checked={agreements.investmentDescription}
+                            onChange={() => handleAgreementChange('investmentDescription')}
+                        />
+                        전자문서에 의하여 투자설명서를 교부 받는 것에 동의합니다.
+                      </CheckboxLabel>
+                      <DownloadButton>투자설명서 다운로드</DownloadButton>
+                    </CheckboxGroup>
+
+                    <CheckboxGroup>
+                      <CheckboxLabel>
+                        <Checkbox
+                            checked={agreements.download1}
+                            onChange={() => handleAgreementChange('download1')}
+                        />
+                        투자설명서를 내 PC에 다운로드 받겠습니다.
+                      </CheckboxLabel>
+                      <DownloadButton>투자설명서 다운로드</DownloadButton>
+                    </CheckboxGroup>
+
+                    <CheckboxGroup>
+                      <CheckboxLabel>
+                        <Checkbox
+                            checked={agreements.complete}
+                            onChange={() => handleAgreementChange('complete')}
+                        />
+                        전자문서에 의한 투자설명서 교부가 완료되었습니다.
+                      </CheckboxLabel>
+                    </CheckboxGroup>
+
+                    <Notice>
+                      ※ 투자설명서 교부 완료 후 청약이 가능합니다.
+                    </Notice>
+                  </InfoCard>
+                </>
+            ) : (
+                <>
+                  <Title>청약 수량 입력</Title>
+                  <InfoCard>
+                    <Row>
+                      <Label>계좌선택</Label>
+                      <Value>{accountData.accountId} 위탁계좌</Value>
+                    </Row>
+                    <Row>
+                      <Label>주문가능금액</Label>
+                      <Value>{accountData.deposit.toLocaleString()}원</Value>
+                    </Row>
+                    <Row>
+                      <Label>청약가능수량</Label>
+                      <Value>{Math.min(
+                          calculateMaxQuantity(),
+                          company.subscribableQuantity || 100 // 회사의 청약 가능 수량과 비교하여 작은 값 사용
+                      )}주</Value>
+                    </Row>
+                    <Row>
+                      <Label>확정발행가</Label>
+                      <Value>{(company.price || 340000).toLocaleString()}원</Value>
+                    </Row>
+                  </InfoCard>
+                  <InfoCard>
+                    <SubTitle>청약 수량</SubTitle>
+                    <input
+                        type="number"
+                        min="0"
+                        max={Math.min(calculateMaxQuantity(), company.subscribableQuantity || 100)}
+                        value={quantity}
+                        onChange={handleQuantityChange}
+                        placeholder="청약하실 수량을 입력해주세요"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid #e5e8eb',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          marginTop: '8px',
+                          fontFamily: 'Noto Sans KR',
+                        }}
                     />
-                    전자문서에 의하여 투자설명서를 교부 받는 것에 동의합니다.
-                  </CheckboxLabel>
-                  <DownloadButton>투자설명서 다운로드</DownloadButton>
-                </CheckboxGroup>
+                    <Notice>
+                      ※ 청약 가능 수량 내에서만 신청이 가능합니다.
+                      <br />
+                      ※ 청약증거금은 청약금액의 50%입니다.
+                    </Notice>
+                  </InfoCard>
+                </>
+            )}
 
-                <CheckboxGroup>
-                  <CheckboxLabel>
-                    <Checkbox
-                      checked={agreements.download1}
-                      onChange={() => handleAgreementChange('download1')}
-                    />
-                    투자설명서를 내 PC에 다운로드 받겠습니다.
-                  </CheckboxLabel>
-                  <DownloadButton>투자설명서 다운로드</DownloadButton>
-                </CheckboxGroup>
-
-                <CheckboxGroup>
-                  <CheckboxLabel>
-                    <Checkbox
-                      checked={agreements.complete}
-                      onChange={() => handleAgreementChange('complete')}
-                    />
-                    전자문서에 의한 투자설명서 교부가 완료되었습니다.
-                  </CheckboxLabel>
-                </CheckboxGroup>
-
-                <Notice>
-                  ※ 투자설명서 교부 완료 후 청약이 가능합니다.
-                </Notice>
-              </InfoCard>
-            </>
-          ) : (
-            <>
-              <Title>청약 수량 입력</Title>
-              <InfoCard>
-                <Row>
-                  <Label>계좌선택</Label>
-                  <Value>46309613-01 위탁계좌</Value>
-                </Row>
-                <Row>
-                  <Label>주문가능금액</Label>
-                  <Value>1,000,000원</Value>
-                </Row>
-                <Row>
-                  <Label>청약가능수량</Label>
-                  <Value>100주</Value>
-                </Row>
-                <Row>
-                  <Label>확정발행가</Label>
-                  <Value>340,000원</Value>
-                </Row>
-              </InfoCard>
-
-              <InfoCard>
-                <SubTitle>청약 수량</SubTitle>
-                <input
-                  type="number"
-                  min="0"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  placeholder="청약하실 수량을 입력해주세요"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e8eb',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    marginTop: '8px',
-                    fontFamily: 'Noto Sans KR',
-                  }}
-                />
-                <Notice>
-                  ※ 청약 가능 수량 내에서만 신청이 가능합니다.
-                  <br />
-                  ※ 청약증거금은 청약금액의 50%입니다.
-                </Notice>
-              </InfoCard>
-            </>
-          )}
-
-          <ButtonContainer>
-            <Button onClick={() => navigate(-1)}>이전</Button>
-            <Button primary onClick={handleNext}>다음</Button>
-          </ButtonContainer>
-        </ModalContent>
-      </ModalContainer>
-    </ModalOverlay>
+            <ButtonContainer>
+              <Button onClick={() => navigate(-1)}>이전</Button>
+              <Button primary onClick={handleNext}>다음</Button>
+            </ButtonContainer>
+          </ModalContent>
+        </ModalContainer>
+      </ModalOverlay>
   );
 }
 

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IdcardOutlined } from '@ant-design/icons';
 
 function SigninAddInfo() {
   const location = useLocation();
   const navigate = useNavigate();
   const prevFormData = location.state;
+
+  const [user, setUser] = useState(null);
 
   const [formData, setFormData] = useState({
     gender: '',
@@ -19,11 +20,11 @@ function SigninAddInfo() {
     setFormData({ ...formData, [name]: value });
   };
 
-   const handleCompleteSignup = async () => {
-     try {
+  const handleCompleteSignup = async () => {
+    try {
       const registerRequest = {
         id: prevFormData.username,
-        username:prevFormData.name,
+        username: prevFormData.name,
         email: prevFormData.email,
         password: prevFormData.password,
         confirmPassword: prevFormData.confirmPassword,
@@ -31,19 +32,41 @@ function SigninAddInfo() {
         job: formData.job,
         investmentStyle: formData.investmentStyle,
         phone: prevFormData.phoneNumber,
-        socialSecurityNumber: prevFormData.birthDate + prevFormData.ssn  // 주민번호 결합
+        socialSecurityNumber: prevFormData.birthDate + prevFormData.ssn, // 주민번호 결합
       };
 
-     const response = await axios.post('http://localhost:8080/api/v1/users/register', registerRequest);
-     
-     if (response.status === 200) {
-       navigate('/login');
-     }
-   } catch (error) {
-     console.error('회원가입 실패:', error);
-     alert(error.response?.data || '회원가입에 실패했습니다.');
-   }
- };
+      const response = await axios.post('http://localhost:8080/api/v1/users/register', registerRequest);
+
+      if (response.status === 200) {
+        const { token } = response.data;
+        localStorage.setItem('jwtToken', token);
+
+        try {
+          const userResponse = await axios.get('http://localhost:8080/api/v1/users/me', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const userData = userResponse.data;
+          console.log('사용자 정보:', userData);
+
+          setUser({
+            username: userData.username,
+          });
+
+          alert(`${userData.username}님, 오셨군요! 환영합니다! 🌴`);
+          navigate('/');
+        } catch (userError) {
+          console.error('사용자 정보 가져오기 실패:', userError);
+          alert('사용자 정보 가져오기에 실패했습니다.');
+        }
+      }
+    } catch (error) {
+      console.error('회원가입 실패:', error);
+      alert(error.response?.data || '회원가입에 실패했습니다.');
+    }
+  };
 
   return (
     <div style={styles.signupContainer}>
