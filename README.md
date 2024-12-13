@@ -1,9 +1,9 @@
 # 🥥 고가용성 증권 플랫폼 Coconut
 안녕하세요! 우리FISA 3기 고가용성 증권 플랫폼 Coconut 팀의 리드미입니다.
+<br/>
+
 <img width="1351" alt="스크린샷 2024-12-13 오전 11 08 25" src="https://github.com/user-attachments/assets/aef64bbf-8685-4902-897f-be65050e8a16" />
-
 <img width="1351" alt="스크린샷 2024-12-13 오전 11 08 56" src="https://github.com/user-attachments/assets/fbd4149a-389b-4904-a05b-fa7cf818b41e" />
-
 <img width="1351" alt="스크린샷 2024-12-13 오전 11 09 05" src="https://github.com/user-attachments/assets/35d627b3-ea3b-47b2-a814-f65bef21db08" />
 
 # 🎬 발표 슬라이드
